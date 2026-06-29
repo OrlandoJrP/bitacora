@@ -1,27 +1,22 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Bitácora — Spec de DigitalOcean App Platform (buildpack Node.js)
 #
-# Cómo usar:
-#   1. Sustituye TU_USUARIO/TU_REPO por tu repositorio de GitHub.
-#   2. Genera AUTH_SECRET con: openssl rand -base64 32
-#   3. Crea la app:  doctl apps create --spec app.yaml
-#      (o pega este spec en el panel de App Platform → Create App → Edit Spec)
+# Pégalo en: tu app → Settings → App Spec → Edit (reemplaza TODO el contenido).
+# Antes de guardar, rellena AUTH_SECRET y ADMIN_INITIAL_PASSWORD.
 #
 # El job PRE_DEPLOY ejecuta migraciones + seed (idempotente) antes de cada deploy.
 # La base Managed Postgres se adjunta como ${db.DATABASE_URL} con sslmode=require.
+# Auth.js detecta el dominio solo (AUTH_TRUST_HOST=true), así funciona tanto en la
+# URL temporal .ondigitalocean.app como luego en tu dominio.
 # ─────────────────────────────────────────────────────────────────────────────
 name: bitacora
 region: nyc
-
-domains:
-  - domain: bitacora.brujulamarkets.com
-    type: PRIMARY
 
 databases:
   - name: db
     engine: PG
     version: "16"
-    production: false # cámbialo a true para un clúster gestionado de producción
+    production: false # cámbialo a true para un clúster con backups automáticos
 
 services:
   - name: web
@@ -46,13 +41,7 @@ services:
       - key: AUTH_SECRET
         scope: RUN_TIME
         type: SECRET
-        value: REEMPLAZA_CON_openssl_rand_base64_32
-      - key: AUTH_URL
-        scope: RUN_TIME
-        value: https://bitacora.brujulamarkets.com
-      - key: NEXTAUTH_URL
-        scope: RUN_TIME
-        value: https://bitacora.brujulamarkets.com
+        value: REEMPLAZA_CON_TU_SECRETO
       - key: AUTH_TRUST_HOST
         scope: RUN_TIME
         value: "true"
@@ -73,7 +62,7 @@ jobs:
         value: ${db.DATABASE_URL}
       - key: ADMIN_EMAIL
         scope: RUN_TIME
-        value: admin@brujulamarkets.com
+        value: velasquezorlandodavid@gmail.com
       - key: ADMIN_INITIAL_PASSWORD
         scope: RUN_TIME
         type: SECRET
