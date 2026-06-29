@@ -1,0 +1,80 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Bitácora — Spec de DigitalOcean App Platform (buildpack Node.js)
+#
+# Cómo usar:
+#   1. Sustituye TU_USUARIO/TU_REPO por tu repositorio de GitHub.
+#   2. Genera AUTH_SECRET con: openssl rand -base64 32
+#   3. Crea la app:  doctl apps create --spec app.yaml
+#      (o pega este spec en el panel de App Platform → Create App → Edit Spec)
+#
+# El job PRE_DEPLOY ejecuta migraciones + seed (idempotente) antes de cada deploy.
+# La base Managed Postgres se adjunta como ${db.DATABASE_URL} con sslmode=require.
+# ─────────────────────────────────────────────────────────────────────────────
+name: bitacora
+region: nyc
+
+domains:
+  - domain: bitacora.brujulamarkets.com
+    type: PRIMARY
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: false # cámbialo a true para un clúster gestionado de producción
+
+services:
+  - name: web
+    environment_slug: node-js
+    github:
+      repo: TU_USUARIO/TU_REPO
+      branch: main
+      deploy_on_push: true
+    build_command: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    run_command: pnpm start
+    http_port: 3000
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    routes:
+      - path: /
+    health_check:
+      http_path: /login
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: AUTH_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: REEMPLAZA_CON_openssl_rand_base64_32
+      - key: AUTH_URL
+        scope: RUN_TIME
+        value: https://bitacora.brujulamarkets.com
+      - key: NEXTAUTH_URL
+        scope: RUN_TIME
+        value: https://bitacora.brujulamarkets.com
+      - key: AUTH_TRUST_HOST
+        scope: RUN_TIME
+        value: "true"
+
+jobs:
+  - name: migrate-seed
+    kind: PRE_DEPLOY
+    environment_slug: node-js
+    github:
+      repo: TU_USUARIO/TU_REPO
+      branch: main
+    build_command: corepack enable && pnpm install --frozen-lockfile
+    run_command: pnpm db:migrate && pnpm db:seed
+    instance_size_slug: basic-xxs
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: ADMIN_EMAIL
+        scope: RUN_TIME
+        value: admin@brujulamarkets.com
+      - key: ADMIN_INITIAL_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: REEMPLAZA_CON_UNA_CLAVE_FUERTE

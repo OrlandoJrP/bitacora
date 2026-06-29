@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Write-Output \"=== DIR ===\"; Get-ChildItem -Force | Select-Object Name,Length,Mode | Format-Table -AutoSize; Write-Output \"=== NODE ===\"; \\(Get-Command node -ErrorAction SilentlyContinue\\).Source; node -v 2>$null; Write-Output \"=== PNPM ===\"; \\(Get-Command pnpm -ErrorAction SilentlyContinue\\).Source; pnpm -v 2>$null; Write-Output \"=== NPM ===\"; npm -v 2>$null; Write-Output \"=== NPX ===\"; \\(Get-Command npx -ErrorAction SilentlyContinue\\).Source; Write-Output \"=== GIT ===\"; git --version 2>$null; Write-Output \"=== COREPACK ===\"; \\(Get-Command corepack -ErrorAction SilentlyContinue\\).Source)",
+      "PowerShell(pnpm install --reporter=append-only 2>&1)",
+      "PowerShell(pnpm install --reporter=append-only 2>&1 | Select-Object -Last 25; Write-Output \"=== EXIT: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm rebuild esbuild 2>&1 | Select-Object -Last 10; Write-Output \"=== rebuild exit: $LASTEXITCODE ===\"; pnpm install --reporter=append-only 2>&1 | Select-Object -Last 15; Write-Output \"=== install exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm test 2>&1 | Select-Object -Last 60; Write-Output \"=== test exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm db:generate 2>&1 | Select-Object -Last 30; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm typecheck 2>&1 | Select-Object -First 60; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm typecheck 2>&1 | Select-Object -First 40; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm add sonner@^1.7.1 2>&1 | Select-Object -Last 8; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm typecheck 2>&1 | Select-Object -First 50; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm install --reporter=append-only 2>&1 | Select-Object -Last 6; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell($env:DATABASE_URL=\"postgres://invalid:invalid@127.0.0.1:5432/bitacora?sslmode=disable\"; $env:AUTH_SECRET=\"build-time-placeholder-secret-value-1234567890\"; $env:AUTH_URL=\"http://localhost:3000\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; pnpm build 2>&1 | Select-Object -Last 70; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell($env:DATABASE_URL=\"postgres://invalid:invalid@127.0.0.1:5432/bitacora?sslmode=disable\"; $env:AUTH_SECRET=\"build-time-placeholder-secret-value-1234567890\"; $env:AUTH_URL=\"http://localhost:3000\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; pnpm build 2>&1 | Select-Object -Last 60; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell($env:DATABASE_URL=\"postgres://invalid:invalid@127.0.0.1:5432/bitacora?sslmode=disable\"; $env:AUTH_SECRET=\"build-time-placeholder-secret-value-1234567890\"; $env:AUTH_URL=\"http://localhost:3000\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; $env:NEXT_DISABLE_STANDALONE=\"1\"; pnpm build 2>&1 | Select-Object -Last 45; Write-Output \"=== exit: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm test 2>&1 | Select-Object -Last 8; Write-Output \"=== test exit: $LASTEXITCODE ===\"; pnpm typecheck 2>&1 | Select-Object -Last 3; Write-Output \"=== typecheck exit: $LASTEXITCODE ===\")",
+      "Bash(cat)",
+      "Bash(node /tmp/round2test.mjs)",
+      "Bash(node /tmp/exptest.mjs)",
+      "Bash(node /tmp/spec54.mjs)",
+      "PowerShell(pnpm typecheck 2>&1 | Select-Object -Last 6; Write-Output \"=== typecheck exit: $LASTEXITCODE ===\"; pnpm test 2>&1 | Select-Object -Last 5; Write-Output \"=== test exit: $LASTEXITCODE ===\")",
+      "Bash(node /tmp/hwmnan.mjs)",
+      "Bash(node /tmp/fix.mjs)",
+      "Bash(node -e ' *)",
+      "PowerShell(pnpm test 2>&1 | Select-Object -Last 6; Write-Output \"=== test: $LASTEXITCODE ===\"; pnpm typecheck 2>&1 | Select-Object -Last 2; Write-Output \"=== typecheck: $LASTEXITCODE ===\")",
+      "PowerShell($env:DATABASE_URL=\"postgres://invalid:invalid@127.0.0.1:5432/bitacora?sslmode=disable\"; $env:AUTH_SECRET=\"build-time-placeholder-secret-value-1234567890\"; $env:AUTH_URL=\"http://localhost:3000\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; $env:NEXT_DISABLE_STANDALONE=\"1\"; pnpm build 2>&1 | Select-Object -Last 18; Write-Output \"=== build exit: $LASTEXITCODE ===\")",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(git config *)",
+      "PowerShell($g = Get-Command gh -ErrorAction SilentlyContinue; if \\($g\\) { \"gh: $\\($g.Source\\)\" } else { \"gh NO instalado\" }; \"GITHUB_TOKEN set: \" + [bool]$env:GITHUB_TOKEN; \"GH_TOKEN set: \" + [bool]$env:GH_TOKEN; \"git credential.helper: \" + \\(git config --global credential.helper\\))"
+    ]
+  }
+}
