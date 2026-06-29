@@ -4,14 +4,19 @@ import { sql as drizzleSql } from "drizzle-orm";
 import postgres from "postgres";
 import * as schema from "@/drizzle/schema";
 
-// No lanzamos al importar (rompería `next build`): la conexión de postgres.js es
-// perezosa, así que el error real aparece solo si se ejecuta una query sin URL.
-const connectionString =
-  process.env.DATABASE_URL ??
+// No lanzamos al importar (rompería `next build`). Además, durante el build de
+// DigitalOcean el binding ${db.DATABASE_URL} todavía NO está resuelto (llega como
+// literal "${db.DATABASE_URL}"), lo que rompería el parseo de la URL. En ese caso
+// (o si falta) usamos una URL ficticia VÁLIDA: las páginas son dinámicas y no
+// consultan la BD en build; en runtime llega la URL real ya resuelta.
+const PLACEHOLDER_DB_URL =
   "postgres://invalid:invalid@127.0.0.1:5432/bitacora?sslmode=disable";
-if (!process.env.DATABASE_URL && process.env.NODE_ENV !== "production") {
+const rawUrl = process.env.DATABASE_URL;
+const urlNoResuelta = !rawUrl || rawUrl.includes("${");
+const connectionString = urlNoResuelta ? PLACEHOLDER_DB_URL : rawUrl;
+if (urlNoResuelta && process.env.NODE_ENV !== "production") {
   console.warn(
-    "[bitacora] DATABASE_URL no está definida. Configúrala en .env.local; las consultas fallarán hasta entonces.",
+    "[bitacora] DATABASE_URL no resuelta; usando marcador (válido solo en build). En runtime debe llegar la URL real.",
   );
 }
 
