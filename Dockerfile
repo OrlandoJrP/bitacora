@@ -3,7 +3,7 @@
 # Imagen lista para DigitalOcean App Platform (Dockerfile) o cualquier runtime de
 # contenedores. Las migraciones/seed se ejecutan como job aparte (ver DEPLOY.md).
 # ─────────────────────────────────────────────────────────────────────────────
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 ENV PNPM_HOME="/pnpm" PATH="/pnpm:$PATH" NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable
 WORKDIR /app

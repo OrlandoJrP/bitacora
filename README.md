@@ -48,7 +48,7 @@ un insumo recalcula automáticamente todos los meses siguientes.
 
 ### Requisitos
 
-- Node 20+ y **pnpm** (`corepack enable`)
+- Node 22+ y **pnpm** (`corepack enable`) — pnpm 11 requiere Node ≥ 22
 - Un PostgreSQL local (o Docker): `docker run --name bitacora-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=bitacora -p 5432:5432 -d postgres:16`
 
 ### Pasos

@@ -4,7 +4,7 @@
   "private": true,
   "description": "Bitácora — Portal privado del fondo de inversión Brújula Markets",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "next dev",
