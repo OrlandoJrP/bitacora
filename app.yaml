@@ -27,7 +27,7 @@ services:
   - name: web
     environment_slug: node-js
     github:
-      repo: TU_USUARIO/TU_REPO
+      repo: OrlandoJrP/bitacora
       branch: main
       deploy_on_push: true
     build_command: corepack enable && pnpm install --frozen-lockfile && pnpm build
@@ -62,7 +62,7 @@ jobs:
     kind: PRE_DEPLOY
     environment_slug: node-js
     github:
-      repo: TU_USUARIO/TU_REPO
+      repo: OrlandoJrP/bitacora
       branch: main
     build_command: corepack enable && pnpm install --frozen-lockfile
     run_command: pnpm db:migrate && pnpm db:seed
