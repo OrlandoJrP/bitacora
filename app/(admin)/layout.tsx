@@ -1,7 +1,6 @@
 import { Logo } from "@/components/brand/Logo";
 import { AdminSidebar } from "@/components/admin/admin-nav";
 import { AdminHeader } from "@/components/admin/admin-header";
-import { AdminBottomNav } from "@/components/admin/admin-bottom-nav";
 import { requireAdmin } from "@/lib/auth/session";
 import { getConfig } from "@/lib/data/config";
 
@@ -39,9 +38,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </main>
         </div>
       </div>
-
-      {/* Navegación móvil/tablet (< md): barra inferior + FAB central */}
-      <AdminBottomNav />
     </div>
   );
 }

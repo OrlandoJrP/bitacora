@@ -6,11 +6,14 @@ import { CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_BOTTOM, ADMIN_CTA, isActiveAdmin, type NavItem } from "./admin-nav-items";
 
-/** Barra inferior (4 tabs + FAB central) para móvil/tablet (< md). */
-export function AdminBottomNav() {
+/** Barra inferior (4 tabs + FAB central) para móvil/tablet (< md).
+ *  Se oculta cuando el drawer está abierto para que no quede por encima de él. */
+export function AdminBottomNav({ drawerOpen = false }: { drawerOpen?: boolean }) {
   const pathname = usePathname();
   const izquierda = ADMIN_BOTTOM.slice(0, 2);
   const derecha = ADMIN_BOTTOM.slice(2);
+
+  if (drawerOpen) return null;
 
   return (
     <>

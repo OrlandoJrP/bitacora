@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { UserMenu } from "@/components/user-menu";
 import { AdminDrawer } from "./admin-drawer";
+import { AdminBottomNav } from "./admin-bottom-nav";
 
 export function AdminHeader({
   email,
@@ -43,6 +44,7 @@ export function AdminHeader({
       </header>
 
       <AdminDrawer open={open} onClose={() => setOpen(false)} nombreFondo={nombreFondo} />
+      <AdminBottomNav drawerOpen={open} />
     </>
   );
 }
