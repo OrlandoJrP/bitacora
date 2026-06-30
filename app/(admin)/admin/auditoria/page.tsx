@@ -71,14 +71,14 @@ export default async function AuditoriaPage() {
                         <summary className="cursor-pointer text-brand-gold-600">Ver cambios</summary>
                         <div className="mt-2 grid gap-2 sm:grid-cols-2">
                           {r.datosAntes ? (
-                            <pre className="overflow-x-auto rounded bg-muted/40 p-2 text-[11px]">
+                            <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-muted/40 p-2 text-[11px]">
                               <span className="text-muted-foreground">Antes:</span>
                               {"\n"}
                               {JSON.stringify(r.datosAntes, null, 2)}
                             </pre>
                           ) : null}
                           {r.datosDespues ? (
-                            <pre className="overflow-x-auto rounded bg-muted/40 p-2 text-[11px]">
+                            <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-muted/40 p-2 text-[11px]">
                               <span className="text-muted-foreground">Después:</span>
                               {"\n"}
                               {JSON.stringify(r.datosDespues, null, 2)}

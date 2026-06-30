@@ -13,7 +13,7 @@ export default async function ClienteLayout({ children }: { children: React.Reac
     <div className="min-h-screen bg-brand-cream pb-nav-safe md:pb-0">
       <header className="safe-top sticky top-0 z-30 border-b border-brand-cream-200 bg-brand-cream/90 backdrop-blur">
         <div className="container flex h-16 items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
+          <div className="flex min-w-0 items-center gap-3 md:gap-6">
             <Logo size={36} withWordmark nombre={config.nombreFondo} />
             <ClienteNavDesktop />
           </div>

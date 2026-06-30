@@ -35,7 +35,8 @@
       "PowerShell(pnpm typecheck 2>&1 | Select-Object -Last 6; Write-Output \"=== typecheck exit: $LASTEXITCODE ===\")",
       "PowerShell(node scripts/gen-icons.mjs 2>&1 | Select-Object -Last 10; Write-Output \"=== exit: $LASTEXITCODE ===\"; Get-ChildItem app/icon.png, app/apple-icon.png, public/icon-192.png, public/icon-512.png -ErrorAction SilentlyContinue | Select-Object Name, Length)",
       "PowerShell(pnpm add -D sharp 2>&1 | Select-Object -Last 4; Write-Output \"=== add exit: $LASTEXITCODE ===\"; node scripts/gen-icons.mjs 2>&1 | Select-Object -Last 8; Write-Output \"=== gen exit: $LASTEXITCODE ===\")",
-      "PowerShell(pnpm typecheck 2>&1 | Select-Object -Last 4; Write-Output \"=== typecheck: $LASTEXITCODE ===\"; $env:DATABASE_URL='${db.DATABASE_URL}'; $env:AUTH_SECRET=\"x\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; $env:NEXT_DISABLE_STANDALONE=\"1\"; pnpm build 2>&1 | Select-Object -Last 12; Write-Output \"=== build: $LASTEXITCODE ===\")"
+      "PowerShell(pnpm typecheck 2>&1 | Select-Object -Last 4; Write-Output \"=== typecheck: $LASTEXITCODE ===\"; $env:DATABASE_URL='${db.DATABASE_URL}'; $env:AUTH_SECRET=\"x\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; $env:NEXT_DISABLE_STANDALONE=\"1\"; pnpm build 2>&1 | Select-Object -Last 12; Write-Output \"=== build: $LASTEXITCODE ===\")",
+      "PowerShell(pnpm typecheck 2>&1 | Select-Object -Last 4; Write-Output \"=== typecheck: $LASTEXITCODE ===\"; $env:DATABASE_URL='${db.DATABASE_URL}'; $env:AUTH_SECRET=\"x\"; $env:NEXT_TELEMETRY_DISABLED=\"1\"; $env:NEXT_DISABLE_STANDALONE=\"1\"; pnpm build 2>&1 | Select-Object -Last 8; Write-Output \"=== build: $LASTEXITCODE ===\")"
     ]
   }
 }

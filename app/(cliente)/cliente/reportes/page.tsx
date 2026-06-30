@@ -110,9 +110,9 @@ function Linea({
   bold?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={bold ? "font-semibold" : ""}>{value}</span>
+    <div className="flex items-center justify-between gap-2">
+      <span className="shrink-0 text-muted-foreground">{label}</span>
+      <span className={`min-w-0 text-right ${bold ? "font-semibold" : ""}`}>{value}</span>
     </div>
   );
 }

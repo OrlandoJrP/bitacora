@@ -108,7 +108,7 @@ export function ClienteFormDialog({
             disabled={editMode}
             hint={editMode ? "El correo de acceso no se puede cambiar aquí." : undefined}
           />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Campo
               id="fechaIngreso"
               label="Fecha de ingreso"

@@ -57,7 +57,7 @@ export function Bars({
         <YAxis
           tickLine={false}
           axisLine={false}
-          width={56}
+          width={46}
           tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
           tickFormatter={(v) => compact.format(v as number)}
         />

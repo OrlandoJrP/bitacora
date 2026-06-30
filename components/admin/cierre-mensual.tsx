@@ -117,7 +117,7 @@ export function CierreMensual({
     <div className="space-y-5">
       {/* Selector de periodo */}
       <Card>
-        <CardContent className="flex flex-wrap items-end gap-4 p-5">
+        <CardContent className="flex flex-wrap items-end gap-4 p-4 sm:p-5">
           <Periodo label="Año">
             <select
               value={anio}
@@ -144,7 +144,7 @@ export function CierreMensual({
               ))}
             </select>
           </Periodo>
-          <p className="ml-auto text-sm text-muted-foreground">
+          <p className="w-full text-sm text-muted-foreground sm:ml-auto sm:w-auto">
             Cargando resultados de <strong className="text-foreground">{nombreMes(anio, mes)}</strong>
           </p>
         </CardContent>
@@ -244,7 +244,7 @@ function FilaCierre({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[1.1fr_1fr_1.4fr]">
+        <div className="grid gap-3 md:grid-cols-[1.1fr_1fr_1.4fr]">
           <select
             value={row.modo}
             onChange={(e) => setRow({ modo: e.target.value as Modo })}
@@ -277,7 +277,7 @@ function FilaCierre({
           />
         </div>
 
-        <div className="flex items-center justify-between gap-4 lg:justify-end">
+        <div className="flex flex-wrap items-center justify-between gap-3 lg:flex-nowrap lg:justify-end">
           <Preview p={preview} comisionPct={comisionPct} />
           <Button variant="gold" size="sm" onClick={guardar} disabled={pending}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

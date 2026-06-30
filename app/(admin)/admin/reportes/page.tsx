@@ -85,7 +85,7 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Saldo actual" value={<MoneyText value={r.saldoActual} />} />
         <StatCard label="ROI acumulado" value={<PctText fraction={r.roiAcumulado} />} />
         <StatCard
@@ -219,7 +219,7 @@ function ReporteConsolidado({
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="AUM" value={<MoneyText value={aum} />} />
         <StatCard label="Resultado neto total" value={<MoneyText value={netoTotal} signed />} />
         <StatCard label="Comisión acumulada" value={<MoneyText value={comisionTotal} />} accent />

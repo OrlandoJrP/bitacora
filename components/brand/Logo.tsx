@@ -38,8 +38,10 @@ export function Logo({
         <circle cx="32" cy="32" r="3.4" fill="#D4A574" />
       </svg>
       {withWordmark && (
-        <span className="flex flex-col leading-none">
-          <span className="font-serif text-lg font-semibold tracking-tight">{nombre}</span>
+        <span className="flex min-w-0 flex-col leading-none">
+          <span className="truncate font-serif text-base font-semibold tracking-tight sm:text-lg">
+            {nombre}
+          </span>
           <span className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             Bitácora
           </span>

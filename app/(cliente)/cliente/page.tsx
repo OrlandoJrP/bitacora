@@ -27,12 +27,12 @@ export default async function ResumenPage() {
     <div className="space-y-6">
       {/* HÉROE: saldo actual */}
       <Card className="overflow-hidden border-0 bg-brand-navy text-brand-cream shadow-lg">
-        <CardContent className="relative p-8">
+        <CardContent className="relative p-6 sm:p-8">
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-brand-gold/15 blur-3xl" />
           <p className="text-sm font-medium uppercase tracking-wide text-brand-cream/70">
             Tu saldo actual
           </p>
-          <div className="mt-2 font-serif text-4xl font-semibold sm:text-5xl md:text-6xl">
+          <div className="mt-2 break-words font-serif text-3xl font-semibold sm:text-5xl md:text-6xl">
             <HeroNumber value={r.saldoActual} />
           </div>
           {ultimo && (
@@ -146,10 +146,10 @@ function RoiCard({
 }) {
   return (
     <Card>
-      <CardContent className="flex items-start justify-between p-6">
-        <div>
+      <CardContent className="flex items-start justify-between gap-3 p-5 sm:p-6">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-muted-foreground">{titulo}</p>
-          <p className="mt-2 font-serif text-4xl font-semibold">
+          <p className="mt-2 font-serif text-3xl font-semibold sm:text-4xl">
             <PctText fraction={fraction} />
           </p>
           <p className="mt-1 text-xs text-muted-foreground">{subtitulo}</p>
