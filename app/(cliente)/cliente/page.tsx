@@ -32,7 +32,7 @@ export default async function ResumenPage() {
           <p className="text-sm font-medium uppercase tracking-wide text-brand-cream/70">
             Tu saldo actual
           </p>
-          <div className="mt-2 font-serif text-5xl font-semibold sm:text-6xl">
+          <div className="mt-2 font-serif text-4xl font-semibold sm:text-5xl md:text-6xl">
             <HeroNumber value={r.saldoActual} />
           </div>
           {ultimo && (

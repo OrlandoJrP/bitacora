@@ -22,13 +22,24 @@ export const metadata: Metadata = {
     template: "%s · Bitácora",
   },
   description: "Portal privado del fondo de inversión Brújula Markets.",
+  applicationName: "Bitácora",
+  manifest: "/manifest.webmanifest",
   robots: { index: false, follow: false },
+  // Evita que iOS convierta montos/fechas en enlaces de teléfono.
+  formatDetection: { telephone: false, date: false, address: false, email: false },
+  appleWebApp: {
+    capable: true,
+    title: "Bitácora",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0A2540",
   width: "device-width",
   initialScale: 1,
+  // Respeta el notch / área segura de iPhone (junto con env(safe-area-inset-*)).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -42,7 +42,7 @@ export function ClienteNavDesktop() {
 export function ClienteNavMobile() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-card/95 backdrop-blur md:hidden">
+    <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border bg-card/95 backdrop-blur md:hidden">
       {ITEMS.map(({ href, label, icon: Icon }) => {
         const active = isActive(pathname, href);
         return (

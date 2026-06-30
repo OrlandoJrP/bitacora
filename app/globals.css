@@ -114,3 +114,35 @@
     transform: translateY(0);
   }
 }
+
+/* ── Comodidad en móvil / iOS ──────────────────────────────────────────── */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* En móvil, los campos a 16px evitan el zoom automático de Safari iOS al
+   enfocar un input (sin desactivar el zoom de accesibilidad). */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Helpers para el área segura del iPhone (notch / home indicator). */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pb-nav-safe {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
