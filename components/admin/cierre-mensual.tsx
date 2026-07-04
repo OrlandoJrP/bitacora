@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, Save, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Loader2, Save, SaveAll } from "lucide-react";
 import { toast } from "sonner";
 import {
   construirCadena,
+  monthKey,
   type LedgerConfig,
   type MesLedger,
   type Modo,
 } from "@/lib/finance/ledger";
-import { guardarRendimiento } from "@/app/actions/rendimientos";
+import { guardarRendimiento, guardarRendimientosLote } from "@/app/actions/rendimientos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,10 @@ export type ClienteCierre = {
 
 type Row = { modo: Modo; valor: string; descripcion: string };
 
+/** Fila por defecto: evita crashear si la lista de clientes crece tras una
+ *  revalidación (un cliente nuevo aún sin entrada en el estado `rows`). */
+const ROW_VACIA: Row = { modo: "porcentaje", valor: "", descripcion: "" };
+
 const MODO_LABEL: Record<Modo, string> = {
   porcentaje: "Porcentaje (%)",
   monto: "Monto (USD)",
@@ -66,6 +71,7 @@ export function CierreMensual({
   const [rows, setRows] = useState<Record<string, Row>>(() =>
     initRows(clientes, anioInicial, mesInicial),
   );
+  const [savingAll, startAll] = useTransition();
 
   const anios: number[] = [];
   for (let a = anioMin; a <= anioInicial; a++) anios.push(a);
@@ -90,11 +96,11 @@ export function CierreMensual({
   }
 
   function setRow(id: string, patch: Partial<Row>) {
-    setRows((prev) => ({ ...prev, [id]: { ...prev[id]!, ...patch } }));
+    setRows((prev) => ({ ...prev, [id]: { ...(prev[id] ?? ROW_VACIA), ...patch } }));
   }
 
   function preview(c: ClienteCierre): MesLedger | null {
-    const row = rows[c.id]!;
+    const row = rows[c.id] ?? ROW_VACIA;
     if (row.valor.trim() === "" || Number.isNaN(Number(row.valor))) return null;
     const rends = c.rendimientos.filter((r) => !(r.anio === anio && r.mes === mes));
     rends.push({ anio, mes, modo: row.modo, valor: Number(row.valor), descripcion: null });
@@ -111,6 +117,68 @@ export function CierreMensual({
 
   function yaRegistrado(c: ClienteCierre) {
     return c.rendimientos.some((r) => r.anio === anio && r.mes === mes);
+  }
+
+  // Un cliente solo "aplica" al período si ya había ingresado ese mes: un
+  // resultado anterior a su fecha de ingreso quedaría fuera de la cadena
+  // derive-on-read (dato huérfano invisible).
+  const periodoKey = monthKey(anio, mes);
+  const aplica = (c: ClienteCierre) => periodoKey >= c.fechaIngreso.slice(0, 7);
+
+  const elegibles = clientes.filter(aplica);
+  const registrados = elegibles.filter(yaRegistrado).length;
+  const pendientes = elegibles.length - registrados;
+
+  function conValorValido() {
+    return elegibles.filter((c) => {
+      const row = rows[c.id];
+      if (!row || row.valor.trim() === "" || Number.isNaN(Number(row.valor))) return false;
+      // Omite filas idénticas al rendimiento ya guardado: evita upserts y
+      // registros de auditoría "editar" espurios al usar "Guardar todos".
+      const ex = c.rendimientos.find((r) => r.anio === anio && r.mes === mes);
+      if (
+        ex &&
+        ex.modo === row.modo &&
+        ex.valor === Number(row.valor) &&
+        (ex.descripcion ?? "") === row.descripcion
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function guardarTodos() {
+    const lista = conValorValido();
+    if (lista.length === 0) {
+      toast.info("No hay cambios pendientes por guardar.");
+      return;
+    }
+    startAll(async () => {
+      const inputs = lista.map((c) => {
+        const row = rows[c.id] ?? ROW_VACIA;
+        return {
+          clienteId: c.id,
+          anio,
+          mes,
+          modo: row.modo,
+          valor: Number(row.valor),
+          descripcion: row.descripcion || null,
+        };
+      });
+      const res = await guardarRendimientosLote(inputs);
+      if (res.ok && res.data) {
+        if (res.data.errores.length > 0) {
+          toast.error(
+            `${res.data.guardados} guardado(s); ${res.data.errores.length} con error: ${res.data.errores[0]?.error ?? ""}`,
+          );
+        } else {
+          toast.success(`${res.data.guardados} resultado(s) guardados.`);
+        }
+      } else if (!res.ok) {
+        toast.error(res.error);
+      }
+    });
   }
 
   return (
@@ -144,9 +212,23 @@ export function CierreMensual({
               ))}
             </select>
           </Periodo>
-          <p className="w-full text-sm text-muted-foreground sm:ml-auto sm:w-auto">
-            Cargando resultados de <strong className="text-foreground">{nombreMes(anio, mes)}</strong>
-          </p>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+            <Badge variant={registrados > 0 ? "pos" : "muted"}>Registrados: {registrados}</Badge>
+            <Badge variant={pendientes > 0 ? "gold" : "muted"}>Pendientes: {pendientes}</Badge>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={guardarTodos}
+              disabled={savingAll || clientes.length === 0}
+            >
+              {savingAll ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SaveAll className="h-4 w-4" />
+              )}
+              Guardar todos
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -156,21 +238,40 @@ export function CierreMensual({
 
       {/* Filas por cliente */}
       <div className="space-y-3">
-        {clientes.map((c) => (
-          <FilaCierre
-            key={c.id}
-            cliente={c}
-            row={rows[c.id]!}
-            setRow={(p) => setRow(c.id, p)}
-            preview={preview(c)}
-            registrado={yaRegistrado(c)}
-            comisionPct={config.comisionPct}
-            anio={anio}
-            mes={mes}
-          />
-        ))}
+        {clientes.map((c) =>
+          aplica(c) ? (
+            <FilaCierre
+              key={c.id}
+              cliente={c}
+              row={rows[c.id] ?? ROW_VACIA}
+              setRow={(p) => setRow(c.id, p)}
+              preview={preview(c)}
+              registrado={yaRegistrado(c)}
+              comisionPct={config.comisionPct}
+              anio={anio}
+              mes={mes}
+            />
+          ) : (
+            <FilaNoAplica key={c.id} nombre={c.nombre} fechaIngreso={c.fechaIngreso} />
+          ),
+        )}
       </div>
     </div>
+  );
+}
+
+/** Cliente cuyo ingreso es posterior al período seleccionado: no aplica. */
+function FilaNoAplica({ nombre, fechaIngreso }: { nombre: string; fechaIngreso: string }) {
+  const [y, m] = fechaIngreso.split("-").map(Number);
+  return (
+    <Card className="opacity-70">
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="font-medium">{nombre}</p>
+        <p className="text-sm text-muted-foreground">
+          No aplica — ingresó en {nombreMes(y ?? 0, m ?? 1)}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

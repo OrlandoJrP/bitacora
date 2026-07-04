@@ -15,20 +15,36 @@ import {
 } from "@/components/ui/table";
 import { NuevoMovimientoButton } from "@/components/admin/nuevo-movimiento-button";
 import { MovimientoRowActions } from "@/components/admin/movimiento-row-actions";
-import { formatFechaLarga } from "@/lib/format";
+import { MovimientosFiltro } from "@/components/admin/movimientos-filtro";
+import { formatFechaLarga, formatUSD } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Movimientos" };
 
-export default async function MovimientosPage() {
+export default async function MovimientosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cliente?: string }>;
+}) {
   const session = await requireAdmin();
+  const { cliente: clienteParam } = await searchParams;
   const ledgers = await cargarLedgersTodos(tenantCtx(session));
 
   const clientes = ledgers.map((l) => ({ id: l.cliente.id, nombre: l.cliente.nombre }));
   const nombrePorId = new Map(clientes.map((c) => [c.id, c.nombre]));
+  const current =
+    clienteParam && clientes.some((c) => c.id === clienteParam) ? clienteParam : "todos";
 
   const movimientos = ledgers
     .flatMap((l) => l.movimientos)
+    .filter((m) => current === "todos" || m.clienteId === current)
     .sort((a, b) => (a.fecha < b.fecha ? 1 : a.fecha > b.fecha ? -1 : 0));
+
+  const totalDep = movimientos
+    .filter((m) => m.tipo === "deposito")
+    .reduce((s, m) => s + Number(m.monto), 0);
+  const totalRet = movimientos
+    .filter((m) => m.tipo === "retiro")
+    .reduce((s, m) => s + Number(m.monto), 0);
 
   return (
     <div className="space-y-6">
@@ -36,10 +52,14 @@ export default async function MovimientosPage() {
         <div>
           <h1 className="font-serif text-2xl font-semibold">Movimientos de capital</h1>
           <p className="text-sm text-muted-foreground">
-            Depósitos y retiros. Editar o eliminar recalcula los saldos siguientes.
+            {movimientos.length} movimiento(s) · Depósitos {formatUSD(totalDep)} · Retiros{" "}
+            {formatUSD(totalRet)}
           </p>
         </div>
-        <NuevoMovimientoButton clientes={clientes} />
+        <div className="flex flex-wrap items-center gap-2">
+          <MovimientosFiltro clientes={clientes} current={current} />
+          <NuevoMovimientoButton clientes={clientes} />
+        </div>
       </div>
 
       <Card>

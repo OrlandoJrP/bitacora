@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   construirCadena,
+  estadisticas,
   resumen,
   resumenPorAnio,
   roiAnual,
@@ -357,6 +358,45 @@ describe("extensión hasta el mes actual con `hasta`", () => {
       "2024-12",
       "2025-01",
     ]);
+  });
+});
+
+describe("estadisticas — mejor/peor mes y promedios (caso §5.4)", () => {
+  const meses = construirCadena({
+    capitalInicial: 10000,
+    fechaIngreso: "2024-09-01",
+    rendimientos: [
+      { anio: 2024, mes: 9, modo: "porcentaje", valor: 8 },
+      { anio: 2024, mes: 10, modo: "porcentaje", valor: -3 },
+      { anio: 2024, mes: 11, modo: "porcentaje", valor: 4 },
+    ],
+    movimientos: [{ tipo: "deposito", monto: 5000, fecha: "2024-11-15" }],
+    config: CFG_DEFAULT,
+  });
+
+  it("identifica mejor (sep) y peor (oct) mes y cuenta signos", () => {
+    const s = estadisticas(meses);
+    expect(s.mejorMes?.key).toBe("2024-09");
+    expect(s.peorMes?.key).toBe("2024-10");
+    expect(s.mesesPositivos).toBe(2);
+    expect(s.mesesNegativos).toBe(1);
+    expect(s.mesesConRendimiento).toBe(3);
+    const esperado = (0.052 + -315.6 / 10520 + 395.32 / 15204.4) / 3;
+    expect(s.promedioRoiMensual).toBeCloseTo(esperado, 12);
+  });
+
+  it("cadena vacía de resultados → estadísticas neutras", () => {
+    const sinRend = construirCadena({
+      capitalInicial: 1000,
+      fechaIngreso: "2024-09-01",
+      rendimientos: [],
+      movimientos: [],
+      config: CFG_DEFAULT,
+    });
+    const s = estadisticas(sinRend);
+    expect(s.mejorMes).toBeNull();
+    expect(s.promedioRoiMensual).toBe(0);
+    expect(s.mesesConRendimiento).toBe(0);
   });
 });
 

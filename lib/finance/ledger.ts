@@ -330,6 +330,38 @@ export interface ResumenAnual {
   saldoFinal: number; // saldo al cierre del último mes del año
 }
 
+/** Estadísticas descriptivas de una cadena (para dashboards). Solo considera
+ *  meses con rendimiento registrado. */
+export interface EstadisticasLedger {
+  mejorMes: MesLedger | null;
+  peorMes: MesLedger | null;
+  promedioRoiMensual: number; // media aritmética del roi de los meses con resultado
+  mesesPositivos: number;
+  mesesNegativos: number;
+  mesesConRendimiento: number;
+}
+
+export function estadisticas(meses: MesLedger[]): EstadisticasLedger {
+  const conRend = meses.filter((m) => m.tieneRendimiento);
+  let mejor: MesLedger | null = null;
+  let peor: MesLedger | null = null;
+  for (const m of conRend) {
+    if (!mejor || m.roiMes > mejor.roiMes) mejor = m;
+    if (!peor || m.roiMes < peor.roiMes) peor = m;
+  }
+  const promedio = conRend.length
+    ? conRend.reduce((s, m) => s + m.roiMes, 0) / conRend.length
+    : 0;
+  return {
+    mejorMes: mejor,
+    peorMes: peor,
+    promedioRoiMensual: promedio,
+    mesesPositivos: conRend.filter((m) => m.rendNeto > 0).length,
+    mesesNegativos: conRend.filter((m) => m.rendNeto < 0).length,
+    mesesConRendimiento: conRend.length,
+  };
+}
+
 export function resumenPorAnio(meses: MesLedger[]): ResumenAnual[] {
   const anios = [...new Set(meses.map((m) => m.anio))].sort((a, b) => a - b);
   return anios.map((anio) => {

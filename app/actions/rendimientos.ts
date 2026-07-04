@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { and, eq } from "drizzle-orm";
 import { withTenant } from "@/lib/db";
-import { rendimientosMensuales } from "@/drizzle/schema";
+import { clientes, rendimientosMensuales } from "@/drizzle/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { registrarAuditoria, sanitizar } from "@/lib/audit";
 import {
@@ -27,7 +27,20 @@ export async function guardarRendimiento(input: unknown): Promise<ActionResult> 
   if (!parsed.success) return fail("Datos inválidos.", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
-  const antes = await withTenant(ADMIN_CTX, async (tx) => {
+  const resultado = await withTenant(ADMIN_CTX, async (tx) => {
+    // El período no puede ser anterior al mes de ingreso del cliente: quedaría
+    // fuera de la cadena derive-on-read (dato huérfano invisible en reportes).
+    const [cli] = await tx
+      .select({ fechaIngreso: clientes.fechaIngreso })
+      .from(clientes)
+      .where(eq(clientes.id, d.clienteId))
+      .limit(1);
+    if (!cli) return { error: "Cliente no encontrado." };
+    const periodo = `${d.anio}-${String(d.mes).padStart(2, "0")}`;
+    if (periodo < cli.fechaIngreso.slice(0, 7)) {
+      return { error: "El período es anterior a la fecha de ingreso del cliente." };
+    }
+
     const [actual] = await tx
       .select()
       .from(rendimientosMensuales)
@@ -63,8 +76,11 @@ export async function guardarRendimiento(input: unknown): Promise<ActionResult> 
           updatedAt: new Date(),
         },
       });
-    return actual ?? null;
+    return { antes: actual ?? null };
   });
+
+  if (resultado.error) return fail(resultado.error);
+  const antes = resultado.antes ?? null;
 
   await registrarAuditoria({
     actorUserId: session.user.id,

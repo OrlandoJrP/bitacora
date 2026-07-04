@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { requireAdmin, tenantCtx } from "@/lib/auth/session";
 import { cargarLedgersTodos } from "@/lib/data/ledger";
@@ -51,7 +52,14 @@ export default async function ClientesPage() {
             <TableBody>
               {ledgers.map((l) => (
                 <TableRow key={l.cliente.id}>
-                  <TableCell className="font-medium">{l.cliente.nombre}</TableCell>
+                  <TableCell>
+                    <Link
+                      href={`/admin/reportes?cliente=${l.cliente.id}`}
+                      className="font-medium hover:text-brand-gold-600 hover:underline"
+                    >
+                      {l.cliente.nombre}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{l.cliente.email}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatFechaLarga(l.cliente.fechaIngreso)}

@@ -33,6 +33,10 @@
     --input: 210 18% 84%;
     --ring: 31 53% 58%;
 
+    /* Verde/rojo de resultados (equivalentes a #1E8E5A / #C0392B en claro). */
+    --pos: 152 65% 34%;
+    --neg: 6 63% 46%;
+
     --radius: 0.75rem;
   }
 
@@ -65,6 +69,10 @@
     --border: 210 30% 25%;
     --input: 210 30% 25%;
     --ring: 31 53% 58%;
+
+    /* Variantes más claras para legibilidad AA sobre superficies navy. */
+    --pos: 152 50% 58%;
+    --neg: 8 75% 70%;
   }
 }
 

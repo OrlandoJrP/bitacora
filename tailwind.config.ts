@@ -25,8 +25,8 @@ const config: Config = {
           cream: "#FAF7F2",
           "cream-200": "#F1EADD",
         },
-        pos: "#1E8E5A",
-        neg: "#C0392B",
+        pos: "hsl(var(--pos) / <alpha-value>)",
+        neg: "hsl(var(--neg) / <alpha-value>)",
         // ── shadcn semantic tokens (driven by CSS vars) ─────────────
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
