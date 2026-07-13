@@ -9,10 +9,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const config = await getConfig();
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
+    // El contenido sigue el tema elegido (claro/oscuro); la barra lateral y el
+    // header navy son elementos de MARCA y se mantienen en ambos tonos.
+    <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
         {/* Sidebar fija — solo escritorio (≥ md) */}
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-brand-navy md:flex">
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-white/10 bg-brand-navy text-brand-cream md:flex">
           <div className="flex h-16 items-center border-b border-white/10 px-5">
             <Logo size={32} withWordmark nombre={config.nombreFondo} />
           </div>

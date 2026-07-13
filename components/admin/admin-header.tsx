@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import { AdminDrawer } from "./admin-drawer";
 import { AdminBottomNav } from "./admin-bottom-nav";
@@ -18,7 +19,7 @@ export function AdminHeader({
 
   return (
     <>
-      <header className="safe-top sticky top-0 z-30 border-b border-white/10 bg-brand-navy/95 backdrop-blur">
+      <header className="safe-top sticky top-0 z-30 border-b border-white/10 bg-brand-navy/95 text-brand-cream backdrop-blur">
         <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6">
           {/* Móvil: hamburguesa + marca */}
           <div className="flex min-w-0 items-center gap-2 md:hidden">
@@ -39,7 +40,10 @@ export function AdminHeader({
           {/* Escritorio: etiqueta */}
           <div className="hidden text-sm text-brand-cream/60 md:block">Panel del operador</div>
 
-          <UserMenu email={email} rol="Operador" />
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle className="border-white/20 text-brand-cream hover:bg-white/10" />
+            <UserMenu email={email} rol="Operador" />
+          </div>
         </div>
       </header>
 

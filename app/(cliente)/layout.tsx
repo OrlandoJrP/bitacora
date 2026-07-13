@@ -1,4 +1,5 @@
 import { Logo } from "@/components/brand/Logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
 import {
   ClienteNavDesktop,
@@ -20,18 +21,21 @@ export default async function ClienteLayout({ children }: { children: React.Reac
     : "individual";
 
   return (
-    <div className="min-h-screen bg-brand-cream pb-nav-safe md:pb-0">
-      <header className="safe-top sticky top-0 z-30 border-b border-brand-cream-200 bg-brand-cream/90 backdrop-blur">
+    <div className="min-h-screen bg-brand-cream pb-nav-safe dark:bg-background md:pb-0">
+      <header className="safe-top sticky top-0 z-30 border-b border-brand-cream-200 bg-brand-cream/90 backdrop-blur dark:border-border dark:bg-background/90">
         <div className="container flex h-16 items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3 md:gap-6">
             <Logo size={36} withWordmark nombre={config.nombreFondo} />
             <ClienteNavDesktop variante={variante} />
           </div>
-          <UserMenu
-            email={ctx.session.user.email ?? ""}
-            rol={variante === "fondo" ? "Socio" : "Inversionista"}
-            accountHref="/cliente/cuenta"
-          />
+          <div className="flex shrink-0 items-center gap-2">
+            <ThemeToggle />
+            <UserMenu
+              email={ctx.session.user.email ?? ""}
+              rol={variante === "fondo" ? "Socio" : "Inversionista"}
+              accountHref="/cliente/cuenta"
+            />
+          </div>
         </div>
       </header>
 

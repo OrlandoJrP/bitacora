@@ -52,7 +52,7 @@ export function AdminDrawer({
         aria-modal="true"
         aria-label="Menú de navegación"
         className={cn(
-          "safe-top absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col border-r border-white/10 bg-brand-navy shadow-2xl transition-transform duration-300 ease-out",
+          "safe-top absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col border-r border-white/10 bg-brand-navy text-brand-cream shadow-2xl transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >

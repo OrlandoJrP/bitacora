@@ -20,7 +20,7 @@ export default async function LoginPage() {
         <p className="mt-1 text-sm text-brand-cream/70">Portal de inversionistas · {nombre}</p>
       </div>
 
-      <Card className="border-brand-cream-200 shadow-xl">
+      <Card className="border-brand-cream-200 shadow-xl dark:border-border">
         <CardContent className="pt-6">
           <Suspense>
             <LoginForm />

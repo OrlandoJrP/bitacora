@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -35,7 +36,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0A2540",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAF7F2" },
+    { media: "(prefers-color-scheme: dark)", color: "#0A2540" },
+  ],
   width: "device-width",
   initialScale: 1,
   // Respeta el notch / área segura de iPhone (junto con env(safe-area-inset-*)).
@@ -48,8 +52,10 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${serif.variable} ${sans.variable} font-sans antialiased`}>
-        {children}
-        <Toaster richColors position="top-center" />
+        <ThemeProvider>
+          {children}
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );

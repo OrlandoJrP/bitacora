@@ -14,7 +14,7 @@ const TABS = [
 export function FondoTabs() {
   const pathname = usePathname();
   return (
-    <div className="inline-flex rounded-lg bg-brand-cream-200/70 p-1">
+    <div className="inline-flex rounded-lg bg-brand-cream-200/70 p-1 dark:bg-muted">
       {TABS.map((t) => {
         const active = t.exact ? pathname === t.href : pathname.startsWith(t.href);
         return (

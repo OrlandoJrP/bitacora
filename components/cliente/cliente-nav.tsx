@@ -67,7 +67,7 @@ export function ClienteNavDesktop({ variante = "individual" }: { variante?: Vari
           className={cn(
             "rounded-md px-3 py-2 text-sm font-medium transition-colors",
             isActive(pathname, item)
-              ? "bg-brand-navy text-brand-cream"
+              ? "bg-brand-navy text-brand-cream dark:bg-brand-gold dark:text-brand-navy"
               : "text-muted-foreground hover:bg-accent/10 hover:text-foreground",
           )}
         >
@@ -98,10 +98,10 @@ export function ClienteNavMobile({ variante = "individual" }: { variante?: Varia
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
-              active ? "text-brand-gold-600" : "text-muted-foreground",
+              active ? "text-brand-gold-600 dark:text-brand-gold" : "text-muted-foreground",
             )}
           >
-            <Icon className={cn("h-5 w-5", active && "text-brand-gold-600")} />
+            <Icon className={cn("h-5 w-5", active && "text-brand-gold-600 dark:text-brand-gold")} />
             {item.label}
           </Link>
         );

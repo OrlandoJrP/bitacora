@@ -1,9 +1,14 @@
+import { ThemeToggle } from "@/components/theme-toggle";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-brand-cream">
+    <div className="relative min-h-screen overflow-hidden bg-brand-cream dark:bg-background">
       {/* Telón navy decorativo */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[42vh] bg-brand-navy" />
       <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand-gold/20 blur-3xl" />
+      <div className="safe-top absolute right-4 top-4 z-20">
+        <ThemeToggle className="border-white/20 text-brand-cream hover:bg-white/10" />
+      </div>
       <div className="relative z-10 grid min-h-screen place-items-center px-4 py-12">
         {children}
       </div>
