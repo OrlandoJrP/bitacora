@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   ArrowDownLeft,
   ArrowDownRight,
@@ -9,6 +9,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { requireCliente, tenantCtx } from "@/lib/auth/session";
+import { contextoPortal } from "@/lib/auth/socio";
 import { cargarLedgerCliente } from "@/lib/data/ledger";
 import { estadisticas, round2 } from "@/lib/finance/ledger";
 import { HeroNumber } from "@/components/hero-number";
@@ -27,6 +28,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default async function ResumenPage() {
+  // Socio sin cuenta individual → su portal es el fondo compartido.
+  const portal = await contextoPortal();
+  if (portal.esSocio && !portal.tieneIndividual) redirect("/cliente/fondo");
+
   const { session, clienteId } = await requireCliente();
   const ledger = await cargarLedgerCliente(tenantCtx(session), clienteId);
   if (!ledger) notFound();

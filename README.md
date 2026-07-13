@@ -89,6 +89,38 @@ cambiar la contraseña.
 | `pnpm db:seed` / `pnpm db:seed:demo` | Seed (admin / + demo) |
 | `pnpm db:studio` | Drizzle Studio |
 
+## Modalidad "Fondo Compartido" (cuenta conjunta)
+
+Además de las cuentas individuales, Bitácora soporta un **fondo común** donde
+varios socios invierten juntos (panel → *Fondo común*):
+
+- El **resultado mensual se registra a nivel del fondo** (%, $ o capital final)
+  y se reparte entre socios **proporcional a su capital al inicio del mes**,
+  con **reparto manual** opcional por socio/mes (fidelidad a % negociados).
+- **Mes en curso "flotante"**: resultado provisional editable con indicador;
+  se confirma con "Cerrar mes". Máximo uno por fondo.
+- **TWR** (composición geométrica mensual) del año y desde el inicio; con
+  `tasa_twr` opcional por mes para casos de exposición parcial de depósitos.
+- **Transferencias entre socios** (compra de participación): par retiro/aporte
+  enlazado, incluso en meses distintos.
+- **Comisión del operador informativa**: se calcula (35% por defecto, sobre
+  ganancia neta acumulada o solo meses positivos) y se muestra al operador,
+  pero **nunca se descuenta** de los saldos de los socios.
+- Socios **con o sin login**: se pueden vincular a un cliente existente, crear
+  acceso nuevo, o dejar sin acceso. Un socio ve el fondo completo
+  (transparencia total); jamás otro fondo (RLS + scoping).
+- Motor puro en [`lib/finance/pool.ts`](lib/finance/pool.ts) con tests
+  ([`pool.test.ts`](lib/finance/pool.test.ts)); derive-on-read igual que la
+  modalidad individual. La modalidad individual no se ve afectada.
+
+**Importar el historial real** (Excel transcrito en
+[`scripts/data/fondo-historico.ts`](scripts/data/fondo-historico.ts)):
+
+```bash
+pnpm db:seed-fondo -- --check   # verifica la transcripción (sin tocar la BD)
+pnpm db:seed-fondo              # importa (idempotente) y re-verifica al centavo
+```
+
 ## Seguridad y aislamiento de datos
 
 - **Sin registro público.** El admin crea las cuentas y puede resetear contraseñas.

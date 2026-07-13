@@ -19,6 +19,9 @@ const MIGRATIONS_DIR = "./drizzle/migrations";
 
 async function main() {
   const sql = connectForScript();
+  // Las tablas tenant tienen FORCE RLS: cualquier migración de DATOS (updates
+  // de backfill) necesita el contexto admin o afectaría 0 filas en silencio.
+  await sql`select set_config('app.current_role', 'admin', false)`;
 
   // Tabla de control en public (no requiere CREATE SCHEMA).
   await sql.unsafe(`
@@ -61,7 +64,9 @@ async function main() {
 
   console.log("→ Aplicando políticas Row-Level Security…");
   await applyRLS(sql);
-  console.log("✓ RLS aplicado (clientes, movimientos, rendimientos_mensuales).");
+  console.log(
+    "✓ RLS aplicado (individual: clientes, movimientos, rendimientos_mensuales · fondo: fondos, fondo_socios, fondo_movimientos, fondo_rendimientos, fondo_overrides).",
+  );
 
   await sql.end();
   console.log("✓ Migración completa.");

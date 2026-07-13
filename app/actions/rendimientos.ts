@@ -31,11 +31,17 @@ export async function guardarRendimiento(input: unknown): Promise<ActionResult> 
     // El período no puede ser anterior al mes de ingreso del cliente: quedaría
     // fuera de la cadena derive-on-read (dato huérfano invisible en reportes).
     const [cli] = await tx
-      .select({ fechaIngreso: clientes.fechaIngreso })
+      .select({ fechaIngreso: clientes.fechaIngreso, esAccesoFondo: clientes.esAccesoFondo })
       .from(clientes)
       .where(eq(clientes.id, d.clienteId))
       .limit(1);
     if (!cli) return { error: "Cliente no encontrado." };
+    if (cli.esAccesoFondo) {
+      return {
+        error:
+          "Este cliente es un acceso de socio del fondo compartido: su resultado se registra en el fondo, no en el cierre individual.",
+      };
+    }
     const periodo = `${d.anio}-${String(d.mes).padStart(2, "0")}`;
     if (periodo < cli.fechaIngreso.slice(0, 7)) {
       return { error: "El período es anterior a la fecha de ingreso del cliente." };

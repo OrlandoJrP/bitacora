@@ -258,8 +258,9 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
 
 /* ── Métricas agregadas ──────────────────────────────────────────────────── */
 
-/** ROI compuesto sobre un conjunto de meses: Π(1 + roi_mes) − 1. */
-export function roiCompuesto(meses: MesLedger[]): number {
+/** ROI compuesto sobre un conjunto de meses: Π(1 + roi_mes) − 1.
+ *  Acepta cualquier serie con `roiMes` (la usa también el fondo compartido). */
+export function roiCompuesto(meses: ReadonlyArray<{ roiMes: number }>): number {
   return meses.reduce((acc, m) => acc * (1 + m.roiMes), 1) - 1;
 }
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { withTenant } from "@/lib/db";
-import { movimientos } from "@/drizzle/schema";
+import { clientes, movimientos } from "@/drizzle/schema";
 import { requireAdmin } from "@/lib/auth/session";
 import { registrarAuditoria, sanitizar } from "@/lib/audit";
 import {
@@ -25,7 +25,19 @@ export async function crearMovimiento(input: unknown): Promise<ActionResult> {
   if (!parsed.success) return fail("Datos inválidos.", parsed.error.flatten().fieldErrors);
   const d = parsed.data;
 
-  const id = await withTenant(ADMIN_CTX, async (tx) => {
+  const resultado = await withTenant(ADMIN_CTX, async (tx) => {
+    const [cli] = await tx
+      .select({ esAccesoFondo: clientes.esAccesoFondo })
+      .from(clientes)
+      .where(eq(clientes.id, d.clienteId))
+      .limit(1);
+    if (!cli) return { error: "Cliente no encontrado." };
+    if (cli.esAccesoFondo) {
+      return {
+        error:
+          "Este cliente es un acceso de socio del fondo compartido: sus movimientos se registran en el fondo, no en la modalidad individual.",
+      };
+    }
     const [m] = await tx
       .insert(movimientos)
       .values({
@@ -36,8 +48,10 @@ export async function crearMovimiento(input: unknown): Promise<ActionResult> {
         descripcion: d.descripcion ?? null,
       })
       .returning();
-    return m!.id;
+    return { id: m!.id };
   });
+  if (resultado.error) return fail(resultado.error);
+  const id = resultado.id;
 
   await registrarAuditoria({
     actorUserId: session.user.id,

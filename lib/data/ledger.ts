@@ -107,7 +107,13 @@ export async function cargarLedgersTodos(ctx: TenantCtx): Promise<LedgerCliente[
   const cfg = toLedgerConfig(await getConfig());
 
   return withTenant(ctx, async (tx) => {
-    const todos = await tx.select().from(clientes).orderBy(asc(clientes.nombre));
+    // Excluye los clientes "cascarón" (solo acceso de socios del fondo
+    // compartido): no pertenecen a la modalidad individual.
+    const todos = await tx
+      .select()
+      .from(clientes)
+      .where(eq(clientes.esAccesoFondo, false))
+      .orderBy(asc(clientes.nombre));
     const movs = await tx.select().from(movimientos).orderBy(asc(movimientos.fecha));
     const rends = await tx
       .select()

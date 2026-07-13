@@ -1,13 +1,23 @@
 import { Logo } from "@/components/brand/Logo";
 import { UserMenu } from "@/components/user-menu";
-import { ClienteNavDesktop, ClienteNavMobile } from "@/components/cliente/cliente-nav";
+import {
+  ClienteNavDesktop,
+  ClienteNavMobile,
+  type VarianteNav,
+} from "@/components/cliente/cliente-nav";
 import { IosInstallHint } from "@/components/cliente/ios-install-hint";
-import { requireCliente } from "@/lib/auth/session";
+import { contextoPortal } from "@/lib/auth/socio";
 import { getConfig } from "@/lib/data/config";
 
 export default async function ClienteLayout({ children }: { children: React.ReactNode }) {
-  const { session } = await requireCliente();
+  const ctx = await contextoPortal();
   const config = await getConfig();
+
+  const variante: VarianteNav = ctx.esSocio
+    ? ctx.tieneIndividual
+      ? "ambos"
+      : "fondo"
+    : "individual";
 
   return (
     <div className="min-h-screen bg-brand-cream pb-nav-safe md:pb-0">
@@ -15,11 +25,11 @@ export default async function ClienteLayout({ children }: { children: React.Reac
         <div className="container flex h-16 items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3 md:gap-6">
             <Logo size={36} withWordmark nombre={config.nombreFondo} />
-            <ClienteNavDesktop />
+            <ClienteNavDesktop variante={variante} />
           </div>
           <UserMenu
-            email={session.user.email ?? ""}
-            rol="Inversionista"
+            email={ctx.session.user.email ?? ""}
+            rol={variante === "fondo" ? "Socio" : "Inversionista"}
             accountHref="/cliente/cuenta"
           />
         </div>
@@ -28,7 +38,7 @@ export default async function ClienteLayout({ children }: { children: React.Reac
       <main className="container animate-enter py-6 md:py-10">{children}</main>
 
       <IosInstallHint />
-      <ClienteNavMobile />
+      <ClienteNavMobile variante={variante} />
     </div>
   );
 }

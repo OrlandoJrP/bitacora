@@ -83,3 +83,42 @@ export async function withTenant<T>(
     return fn(tx);
   });
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * withFondoTenant — igual que withTenant pero además resuelve y fija
+ * `app.current_fondo_id` para las políticas RLS del FONDO COMPARTIDO.
+ * - admin: fondo_id vacío (las políticas de admin no lo necesitan).
+ * - cliente: busca su membresía en fondo_socios (visible gracias a la
+ *   cláusula bootstrap de la política, que permite leer la propia fila por
+ *   cliente_id ANTES de fijar el fondo). Cliente no-socio → var '' → todas
+ *   las tablas del fondo devuelven 0 filas (fail-closed).
+ * `withTenant` queda intacto para la modalidad individual.
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function withFondoTenant<T>(
+  ctx: TenantCtx,
+  fn: (
+    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+    fondoId: string | null,
+  ) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(
+      drizzleSql`select set_config('app.current_role', ${ctx.role}, true)`,
+    );
+    await tx.execute(
+      drizzleSql`select set_config('app.current_cliente_id', ${ctx.clienteId ?? ""}, true)`,
+    );
+
+    let fondoId: string | null = null;
+    if (ctx.role === "cliente" && ctx.clienteId) {
+      const filas = (await tx.execute(
+        drizzleSql`select fondo_id from fondo_socios where cliente_id = ${ctx.clienteId} limit 1`,
+      )) as unknown as Array<{ fondo_id: string }>;
+      fondoId = filas[0]?.fondo_id ?? null;
+    }
+    await tx.execute(
+      drizzleSql`select set_config('app.current_fondo_id', ${fondoId ?? ""}, true)`,
+    );
+    return fn(tx, fondoId);
+  });
+}

@@ -8,7 +8,11 @@ export type EntidadAuditoria =
   | "movimiento"
   | "rendimiento"
   | "configuracion"
-  | "usuario";
+  | "usuario"
+  | "fondo"
+  | "socio"
+  | "rendimiento_fondo"
+  | "movimiento_fondo";
 
 export interface AuditoriaParams {
   actorUserId?: string | null;
