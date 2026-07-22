@@ -17,9 +17,7 @@
 
 export const CLIENTE = {
   nombre: "Lenin Rodríguez",
-  // Placeholder: sin login todavía (no hay correo en el reporte). Al darle
-  // acceso real, edita el correo en Admin → Clientes.
-  email: "lenin.rodriguez@bitacora.local",
+  email: "leninrpetit@gmail.com",
   fechaIngreso: "2024-11-01",
   capitalInicial: "3000.00",
   comisionPct: "33.333",
