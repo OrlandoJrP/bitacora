@@ -84,6 +84,8 @@ export default async function ClientesPage() {
                         fechaIngreso: l.cliente.fechaIngreso,
                         capitalInicial: l.cliente.capitalInicial,
                         estado: l.cliente.estado,
+                        comisionPct: l.cliente.comisionPct,
+                        politicaComision: l.cliente.politicaComision,
                         notas: l.cliente.notas,
                       }}
                     />

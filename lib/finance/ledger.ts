@@ -59,6 +59,15 @@ export interface MovimientoInput {
   descripcion?: string | null;
 }
 
+/** Política de comisión del operador:
+ *  - "normal": % sobre todo mes positivo.
+ *  - "hwm_saldo": solo sobre lo que excede el pico histórico del SALDO.
+ *  - "deficit_pnl": las pérdidas crean un déficit acumulado EN PNL; los meses
+ *    positivos primero recuperan ese déficit y solo el excedente paga comisión.
+ *    (A diferencia de hwm_saldo, los depósitos/retiros no distorsionan el
+ *    cálculo: el déficit vive en resultados, no en el nivel del saldo.) */
+export type PoliticaComision = "normal" | "hwm_saldo" | "deficit_pnl";
+
 export interface LedgerConfig {
   /** Comisión del operador en % (p. ej. 35 = 35%). */
   comisionPct: number;
@@ -66,6 +75,8 @@ export interface LedgerConfig {
   usaHighWaterMark: boolean;
   /** Si true (default), el operador NO comparte pérdidas; los meses negativos no le restan. */
   pierdeSoloCliente: boolean;
+  /** Si se omite, se deriva: usaHighWaterMark ? "hwm_saldo" : "normal". */
+  politica?: PoliticaComision;
 }
 
 export interface LedgerInput {
@@ -94,6 +105,9 @@ export interface MesLedger {
   saldoFinal: number;
   roiMes: number; // fracción (0.052 = +5.20%)
   hwm: number; // high-water mark al cierre del mes
+  /** Déficit PNL pendiente de recuperar al cierre del mes (solo política
+   *  "deficit_pnl"; 0 en las demás). El operador no cobra mientras sea > 0. */
+  deficitAcum: number;
   descripcion: string | null;
   tieneRendimiento: boolean;
   movimientos: MovimientoInput[]; // movimientos imputados a este mes (para detalle)
@@ -129,7 +143,7 @@ function cmpYM(a: YM, b: YM): number {
 
 export function construirCadena(input: LedgerInput): MesLedger[] {
   const start = ymOf(input.fechaIngreso);
-  const { comisionPct, usaHighWaterMark, pierdeSoloCliente } = input.config;
+  const { comisionPct, pierdeSoloCliente } = input.config;
 
   // Índice de rendimientos por mes (único por mes garantizado en BD).
   const rendByKey = new Map<string, RendimientoInput>();
@@ -164,6 +178,10 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
   const meses: MesLedger[] = [];
   let saldoInicial = round2(num(input.capitalInicial));
   let hwm = round2(num(input.capitalInicial));
+  // Política efectiva (compat: sin `politica`, se deriva del flag global).
+  const politica: PoliticaComision =
+    input.config.politica ?? (input.config.usaHighWaterMark ? "hwm_saldo" : "normal");
+  let deficitAcum = 0; // solo se usa en "deficit_pnl"
 
   let cur: YM = { ...start };
   let safety = 0;
@@ -198,6 +216,14 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
         rendNeto = round2(saldoFinal - baseOperativa);
         rendBruto = rendNeto; // sin concepto de "bruto" separado en este modo
         comision = 0;
+        // En deficit_pnl el déficit sigue vivo aunque el mes venga "fijado":
+        // así el histórico importado por saldo_final arrastra el déficit real.
+        if (politica === "deficit_pnl") {
+          deficitAcum =
+            rendNeto < 0
+              ? round2(deficitAcum - rendNeto)
+              : Math.max(0, round2(deficitAcum - rendNeto));
+        }
       } else {
         if (r.modo === "porcentaje") {
           rendBruto = round2((baseOperativa * valor) / 100);
@@ -205,9 +231,23 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
           rendBruto = round2(valor); // modo "monto": rendimiento bruto directo en USD
         }
 
-        if (rendBruto > 0) {
+        if (politica === "deficit_pnl") {
+          // Las pérdidas alimentan el déficit; las ganancias primero lo
+          // recuperan y solo el excedente paga comisión.
+          if (rendBruto < 0) {
+            deficitAcum = round2(deficitAcum - rendBruto);
+            comision = 0;
+          } else if (rendBruto > 0) {
+            const recuperado = Math.min(rendBruto, deficitAcum);
+            const billable = round2(rendBruto - recuperado);
+            deficitAcum = round2(deficitAcum - recuperado);
+            comision = round2((billable * comisionPct) / 100);
+          } else {
+            comision = 0;
+          }
+        } else if (rendBruto > 0) {
           let billable = rendBruto;
-          if (usaHighWaterMark) {
+          if (politica === "hwm_saldo") {
             const preFee = baseOperativa + rendBruto;
             billable = Math.max(0, Math.min(rendBruto, round2(preFee - hwm)));
           }
@@ -244,6 +284,7 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
       saldoFinal,
       roiMes,
       hwm,
+      deficitAcum,
       descripcion: r?.descripcion ?? null,
       tieneRendimiento: !!r,
       movimientos: movs,

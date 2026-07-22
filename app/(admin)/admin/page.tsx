@@ -255,7 +255,11 @@ export default async function AdminDashboard() {
           hint={
             hayFondo
               ? `Individual ${formatUSD(m.comisionMesActual)} · Fondo ${formatUSD(fondoComisionMes)}`
-              : `${formatPct(Number(config.comisionPct) / 100, false)} sobre meses positivos`
+              : m.ledgers.some(
+                    (l) => l.cliente.comisionPct != null || l.cliente.politicaComision != null,
+                  )
+                ? "Según las condiciones de cada cliente"
+                : `${formatPct(Number(config.comisionPct) / 100, false)} sobre meses positivos`
           }
           icon={<Coins className="h-4 w-4" />}
           accent

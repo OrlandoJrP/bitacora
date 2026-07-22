@@ -11,8 +11,10 @@ import {
 } from "@/drizzle/schema";
 import {
   construirCadena,
+  num,
   resumen,
   resumenPorAnio,
+  type LedgerConfig,
   type MesLedger,
   type ResumenLedger,
   type ResumenAnual,
@@ -27,6 +29,8 @@ export interface LedgerCliente {
   porAnio: ResumenAnual[];
   movimientos: Movimiento[];
   rendimientos: RendimientoMensual[];
+  /** Config EFECTIVA del cliente (global + sus overrides de comisión/política). */
+  config: LedgerConfig;
 }
 
 function construir(
@@ -36,11 +40,18 @@ function construir(
   cfg: ReturnType<typeof toLedgerConfig>,
 ): LedgerCliente {
   const hasta = mesActual();
+  // Config efectiva: la global, con los overrides propios del cliente
+  // (comisión % y política) cuando existen.
+  const config: LedgerConfig = {
+    ...cfg,
+    comisionPct: cliente.comisionPct != null ? num(cliente.comisionPct) : cfg.comisionPct,
+    politica: cliente.politicaComision ?? cfg.politica,
+  };
   const meses = construirCadena({
     capitalInicial: cliente.capitalInicial,
     fechaIngreso: cliente.fechaIngreso,
     hasta,
-    config: cfg,
+    config,
     rendimientos: rends.map((r) => ({
       anio: r.anio,
       mes: r.mes,
@@ -62,6 +73,7 @@ function construir(
     porAnio: resumenPorAnio(meses),
     movimientos: movs,
     rendimientos: rends,
+    config,
   };
 }
 

@@ -37,6 +37,8 @@ export type ClienteCierre = {
   nombre: string;
   capitalInicial: number;
   fechaIngreso: string;
+  /** Config efectiva del cliente (global + overrides propios de % y política). */
+  config: LedgerConfig;
   rendimientos: RendimientoLite[];
   movimientos: MovimientoLite[];
 };
@@ -55,13 +57,11 @@ const MODO_LABEL: Record<Modo, string> = {
 
 export function CierreMensual({
   clientes,
-  config,
   anioInicial,
   mesInicial,
   anioMin,
 }: {
   clientes: ClienteCierre[];
-  config: LedgerConfig;
   anioInicial: number;
   mesInicial: number;
   anioMin: number;
@@ -110,7 +110,7 @@ export function CierreMensual({
       hasta: { anio, mes },
       rendimientos: rends,
       movimientos: c.movimientos,
-      config,
+      config: c.config, // condiciones PROPIAS del cliente (% y política)
     });
     return meses.find((x) => x.anio === anio && x.mes === mes) ?? null;
   }
@@ -247,7 +247,7 @@ export function CierreMensual({
               setRow={(p) => setRow(c.id, p)}
               preview={preview(c)}
               registrado={yaRegistrado(c)}
-              comisionPct={config.comisionPct}
+              comisionPct={c.config.comisionPct}
               anio={anio}
               mes={mes}
             />
@@ -403,6 +403,14 @@ function Preview({ p, comisionPct }: { p: MesLedger | null; comisionPct: number 
           <MoneyText value={p.comision} />
         </span>
       </div>
+      {p.deficitAcum > 0 && (
+        <div className="text-muted-foreground">
+          Déficit por recuperar:{" "}
+          <span className="text-neg">
+            <MoneyText value={p.deficitAcum} />
+          </span>
+        </div>
+      )}
       <div className="font-medium">
         Neto:{" "}
         <span className={p.rendNeto >= 0 ? "text-pos" : "text-neg"}>

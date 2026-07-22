@@ -24,6 +24,8 @@ export type ClienteEditable = {
   fechaIngreso: string;
   capitalInicial: string;
   estado: "activo" | "inactivo";
+  comisionPct: string | null;
+  politicaComision: "normal" | "hwm_saldo" | "deficit_pnl" | null;
   notas: string | null;
 };
 
@@ -50,6 +52,8 @@ export function ClienteFormDialog({
       email: String(fd.get("email") ?? ""),
       fechaIngreso: String(fd.get("fechaIngreso") ?? ""),
       capitalInicial: String(fd.get("capitalInicial") ?? ""),
+      comisionPct: String(fd.get("comisionPct") ?? ""),
+      politicaComision: String(fd.get("politicaComision") ?? ""),
       notas: String(fd.get("notas") ?? ""),
     };
     setErrs({});
@@ -126,6 +130,39 @@ export function ClienteFormDialog({
               errs={errs.capitalInicial}
               required
             />
+          </div>
+          {/* Condiciones propias (opcionales; vacío = configuración global) */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="comisionPct">Comisión % propia (opcional)</Label>
+              <Input
+                id="comisionPct"
+                name="comisionPct"
+                type="number"
+                step="0.001"
+                min="0"
+                max="100"
+                placeholder="Vacío = global"
+                defaultValue={cliente?.comisionPct ?? ""}
+              />
+              {errs.comisionPct?.map((e) => (
+                <p key={e} className="text-xs text-destructive">{e}</p>
+              ))}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="politicaComision">Política de comisión</Label>
+              <select
+                id="politicaComision"
+                name="politicaComision"
+                defaultValue={cliente?.politicaComision ?? ""}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Global (ajustes del fondo)</option>
+                <option value="normal">Normal (todo mes positivo)</option>
+                <option value="hwm_saldo">High-water mark (saldo)</option>
+                <option value="deficit_pnl">Déficit PNL (recupera pérdidas antes de cobrar)</option>
+              </select>
+            </div>
           </div>
           {editMode && (
             <div className="space-y-1.5">

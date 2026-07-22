@@ -14,11 +14,26 @@ export const modoRendimiento = z.enum(["porcentaje", "monto", "saldo_final"]);
 export const tipoMovimiento = z.enum(["deposito", "retiro"]);
 
 /* ── Clientes ────────────────────────────────────────────────────────────── */
+/** Número opcional desde formulario: "" o null ⇒ null (usa el valor global). */
+const numeroOpcionalDesdeForm = z.preprocess(
+  (v) => (v === "" || v == null ? null : v),
+  z.union([numeroDesdeForm, z.null()]),
+);
+const politicaOpcional = z.preprocess(
+  (v) => (v === "" || v == null ? null : v),
+  z.enum(["normal", "hwm_saldo", "deficit_pnl"]).nullable(),
+);
+
 export const crearClienteSchema = z.object({
   nombre: z.string().min(2, "El nombre es obligatorio.").max(120),
   email: z.string().email("Correo inválido."),
   fechaIngreso: fechaISO,
   capitalInicial: numeroDesdeForm.refine((v) => v >= 0, "El capital no puede ser negativo."),
+  /** Condiciones propias (null = usa la configuración global del fondo). */
+  comisionPct: numeroOpcionalDesdeForm
+    .refine((v) => v == null || (v >= 0 && v <= 100), "La comisión debe estar entre 0 y 100%.")
+    .optional(),
+  politicaComision: politicaOpcional.optional(),
   notas: z.string().max(1000).optional().nullable(),
 });
 

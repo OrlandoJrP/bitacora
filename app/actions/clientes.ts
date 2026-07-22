@@ -51,6 +51,8 @@ export async function crearCliente(
         email,
         fechaIngreso: d.fechaIngreso,
         capitalInicial: d.capitalInicial.toFixed(2),
+        comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
+        politicaComision: d.politicaComision ?? null,
         notas: d.notas ?? null,
       })
       .returning();
@@ -72,7 +74,14 @@ export async function crearCliente(
     accion: "crear",
     entidad: "cliente",
     entidadId: clienteId,
-    despues: { nombre: d.nombre, email, fechaIngreso: d.fechaIngreso, capitalInicial: d.capitalInicial },
+    despues: {
+      nombre: d.nombre,
+      email,
+      fechaIngreso: d.fechaIngreso,
+      capitalInicial: d.capitalInicial,
+      comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
+      politicaComision: d.politicaComision ?? null,
+    },
   });
 
   revalidarTodo();
@@ -98,6 +107,8 @@ export async function editarCliente(input: unknown): Promise<ActionResult> {
         email: d.email.toLowerCase().trim(),
         fechaIngreso: d.fechaIngreso,
         capitalInicial: d.capitalInicial.toFixed(2),
+        comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
+        politicaComision: d.politicaComision ?? null,
         estado: d.estado,
         notas: d.notas ?? null,
         updatedAt: new Date(),
@@ -114,7 +125,15 @@ export async function editarCliente(input: unknown): Promise<ActionResult> {
     entidad: "cliente",
     entidadId: d.id,
     antes: sanitizar(antes),
-    despues: { nombre: d.nombre, email: d.email, fechaIngreso: d.fechaIngreso, capitalInicial: d.capitalInicial, estado: d.estado },
+    despues: {
+      nombre: d.nombre,
+      email: d.email,
+      fechaIngreso: d.fechaIngreso,
+      capitalInicial: d.capitalInicial,
+      estado: d.estado,
+      comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
+      politicaComision: d.politicaComision ?? null,
+    },
   });
 
   revalidarTodo();

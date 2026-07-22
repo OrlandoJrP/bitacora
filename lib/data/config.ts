@@ -26,5 +26,6 @@ export function toLedgerConfig(c: Configuracion): LedgerConfig {
     comisionPct: num(c.comisionPct),
     usaHighWaterMark: c.usaHighWaterMark,
     pierdeSoloCliente: c.pierdeSoloCliente,
+    politica: c.usaHighWaterMark ? "hwm_saldo" : "normal",
   };
 }

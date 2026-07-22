@@ -26,6 +26,11 @@ export const modoRendimientoEnum = pgEnum("modo_rendimiento", [
   "monto",
   "saldo_final",
 ]);
+export const politicaComisionEnum = pgEnum("politica_comision", [
+  "normal",
+  "hwm_saldo",
+  "deficit_pnl",
+]);
 
 /* ──────────────────────────────────────────────────────────────────────────
  * clientes — un inversionista del fondo.
@@ -43,6 +48,11 @@ export const clientes = pgTable("clientes", {
    *  compartido. Se excluye de todas las vistas/acciones de la modalidad
    *  individual (dashboard, clientes, reportes, movimientos, cierre). */
   esAccesoFondo: boolean("es_acceso_fondo").notNull().default(false),
+  /** Condiciones PROPIAS del cliente (NULL = usa la configuración global).
+   *  Permiten acuerdos distintos por cliente, p. ej. Lenin Rodríguez:
+   *  comisión 33.333% con política deficit_pnl (66.66/33.33 con déficit). */
+  comisionPct: numeric("comision_pct", { precision: 6, scale: 3 }),
+  politicaComision: politicaComisionEnum("politica_comision"),
   notas: text("notas"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

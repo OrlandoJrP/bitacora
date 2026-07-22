@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { requireAdmin, tenantCtx } from "@/lib/auth/session";
 import { cargarLedgersTodos } from "@/lib/data/ledger";
-import { getConfig, toLedgerConfig } from "@/lib/data/config";
 import { num } from "@/lib/finance/ledger";
 import { mesActual } from "@/lib/format";
 import { CierreMensual } from "@/components/admin/cierre-mensual";
@@ -10,10 +9,7 @@ export const metadata: Metadata = { title: "Cierre mensual" };
 
 export default async function CierrePage() {
   const session = await requireAdmin();
-  const [ledgers, config] = await Promise.all([
-    cargarLedgersTodos(tenantCtx(session)),
-    getConfig(),
-  ]);
+  const ledgers = await cargarLedgersTodos(tenantCtx(session));
   const { anio, mes } = mesActual();
   const activos = ledgers.filter((l) => l.cliente.estado === "activo");
 
@@ -22,6 +18,8 @@ export default async function CierrePage() {
     nombre: l.cliente.nombre,
     capitalInicial: num(l.cliente.capitalInicial),
     fechaIngreso: l.cliente.fechaIngreso,
+    // Config EFECTIVA del cliente (puede diferir de la global: % o política propios).
+    config: l.config,
     rendimientos: l.rendimientos.map((r) => ({
       anio: r.anio,
       mes: r.mes,
@@ -50,7 +48,6 @@ export default async function CierrePage() {
       </div>
       <CierreMensual
         clientes={clientes}
-        config={toLedgerConfig(config)}
         anioInicial={anio}
         mesInicial={mes}
         anioMin={anioMin}

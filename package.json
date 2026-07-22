@@ -19,6 +19,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:demo": "tsx scripts/seed.ts --demo",
+    "db:seed-lenin": "tsx scripts/seed-lenin.ts",
     "db:seed-fondo": "tsx scripts/seed-fondo.ts",
     "db:studio": "drizzle-kit studio"
   },
