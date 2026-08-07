@@ -575,3 +575,130 @@ describe("resumenPorAnio — agregación anual", () => {
     expect(a2025.saldoFinal).toBe(mes(meses, "2025-01").saldoFinal);
   });
 });
+
+/* ══ Comisión informativa (cuenta Daniel Flores: saldos BRUTOS) ═══════════ */
+describe("comisionInformativa — la comisión se devenga pero NO toca el saldo", () => {
+  const CFG_INF: LedgerConfig = {
+    comisionPct: 35,
+    usaHighWaterMark: false,
+    pierdeSoloCliente: true,
+    politica: "deficit_pnl",
+    comisionInformativa: true,
+  };
+
+  it("saldo_final: el saldo cargado manda y la comisión sale aparte", () => {
+    const meses = construirCadena({
+      capitalInicial: 1000,
+      fechaIngreso: "2025-09-01",
+      rendimientos: [{ anio: 2025, mes: 9, modo: "saldo_final", valor: 2000 }],
+      movimientos: [],
+      config: CFG_INF,
+    });
+    const m = mes(meses, "2025-09");
+    expect(m.saldoFinal).toBe(2000); // intacto: no se le resta la comisión
+    expect(m.rendNeto).toBe(1000);
+    expect(m.comision).toBe(350); // 35% de 1,000, informativa
+    expect(m.deficitAcum).toBe(0);
+  });
+
+  it("resultadoComisionable deja fuera del reparto lo que es 100% del cliente", () => {
+    const meses = construirCadena({
+      capitalInicial: 1000,
+      fechaIngreso: "2025-09-01",
+      // El mes subió 1,000 pero solo 800 son trading: 200 son recompensas.
+      rendimientos: [
+        { anio: 2025, mes: 9, modo: "saldo_final", valor: 2000, resultadoComisionable: 800 },
+      ],
+      movimientos: [],
+      config: CFG_INF,
+    });
+    const m = mes(meses, "2025-09");
+    expect(m.saldoFinal).toBe(2000);
+    expect(m.rendNeto).toBe(1000); // el saldo subió 1,000
+    expect(m.comision).toBe(280); // pero solo se comisionan 800 → 35% = 280
+  });
+
+  it("el déficit se lleva sobre la base comisionable, no sobre el saldo", () => {
+    const meses = construirCadena({
+      capitalInicial: 10000,
+      fechaIngreso: "2025-09-01",
+      rendimientos: [
+        // Pierde 1,000 de trading pero recibe 100 de recompensas (saldo −900).
+        { anio: 2025, mes: 9, modo: "saldo_final", valor: 9100, resultadoComisionable: -1000 },
+        // Gana 1,500 de trading: recupera 1,000 y comisiona sobre 500.
+        { anio: 2025, mes: 10, modo: "saldo_final", valor: 10600, resultadoComisionable: 1500 },
+      ],
+      movimientos: [],
+      config: CFG_INF,
+    });
+    const sep = mes(meses, "2025-09");
+    const oct = mes(meses, "2025-10");
+    expect(sep.comision).toBe(0);
+    expect(sep.deficitAcum).toBe(1000);
+    expect(sep.saldoFinal).toBe(9100);
+    expect(oct.deficitAcum).toBe(0);
+    expect(oct.comision).toBe(175); // 35% de (1,500 − 1,000)
+    expect(oct.saldoFinal).toBe(10600); // el saldo NO baja por la comisión
+  });
+
+  it("REGRESIÓN: sin el flag, saldo_final sigue con comisión 0 (cuenta de Lenin)", () => {
+    const rendimientos = [
+      { anio: 2025, mes: 9, modo: "saldo_final" as const, valor: 2000 },
+    ];
+    const base = { capitalInicial: 1000, fechaIngreso: "2025-09-01", rendimientos, movimientos: [] };
+    const sinFlag = construirCadena({
+      ...base,
+      config: { comisionPct: 33.333, usaHighWaterMark: false, pierdeSoloCliente: true, politica: "deficit_pnl" },
+    });
+    expect(mes(sinFlag, "2025-09").comision).toBe(0);
+    expect(mes(sinFlag, "2025-09").saldoFinal).toBe(2000);
+  });
+
+  it("en porcentaje/monto la comisión TAMPOCO reduce el saldo con el flag activo", () => {
+    // Clave para el cierre mensual: el desplegable arranca en "porcentaje", así
+    // que si el flag solo valiera para saldo_final, cerrar un mes normal
+    // separaría el saldo del portal del saldo real del bróker.
+    const rendimientos = [{ anio: 2025, mes: 9, modo: "porcentaje" as const, valor: 10 }];
+    const base = { capitalInicial: 10000, fechaIngreso: "2025-09-01", rendimientos, movimientos: [] };
+    const con = construirCadena({ ...base, config: { ...CFG_INF, politica: "normal" } });
+    const sin = construirCadena({
+      ...base,
+      config: { comisionPct: 35, usaHighWaterMark: false, pierdeSoloCliente: true, politica: "normal" },
+    });
+    expect(mes(con, "2025-09").comision).toBe(350); // devengada
+    expect(mes(con, "2025-09").rendNeto).toBe(1000); // el resultado no se recorta
+    expect(mes(con, "2025-09").saldoFinal).toBe(11000); // saldo bruto, intacto
+    expect(mes(sin, "2025-09").saldoFinal).toBe(10650); // sin el flag sí se descuenta
+  });
+
+  it("en modo monto la base propia también manda (porcentaje/monto + resultadoComisionable)", () => {
+    const meses = construirCadena({
+      capitalInicial: 10000,
+      fechaIngreso: "2025-09-01",
+      rendimientos: [
+        { anio: 2025, mes: 9, modo: "monto", valor: 1000, resultadoComisionable: 600 },
+      ],
+      movimientos: [],
+      config: { ...CFG_INF, politica: "normal" },
+    });
+    const m = mes(meses, "2025-09");
+    expect(m.saldoFinal).toBe(11000);
+    expect(m.comision).toBe(210); // 35% de 600, no de 1,000
+  });
+
+  it("resumen: comisionOperador agrega la comisión devengada", () => {
+    const meses = construirCadena({
+      capitalInicial: 1000,
+      fechaIngreso: "2025-09-01",
+      rendimientos: [
+        { anio: 2025, mes: 9, modo: "saldo_final", valor: 2000 },
+        { anio: 2025, mes: 10, modo: "saldo_final", valor: 3000 },
+      ],
+      movimientos: [],
+      config: CFG_INF,
+    });
+    const r = resumen(meses, 1000);
+    expect(r.saldoActual).toBe(3000);
+    expect(r.comisionOperador).toBe(700); // 350 + 350
+  });
+});

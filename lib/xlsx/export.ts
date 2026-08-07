@@ -9,12 +9,17 @@ export type ItemLedger = {
   meses: MesLedger[];
   porAnio: ResumenAnual[];
   resumen: { saldoActual: number; comisionOperador: number; gananciaNeta: number; roiAcumulado: number };
+  /** true = saldos brutos con la comisión liquidada fuera de la cuenta. */
+  comisionInformativa?: boolean;
 };
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const r4 = (n: number) => Math.round(n * 10000) / 10000;
 
-function filasMensuales(meses: MesLedger[]) {
+/** En cuentas de comisión informativa el saldo es BRUTO (la comisión se liquidó
+ *  fuera), así que "Rend. neto" sería idéntico al bruto y la fila no cuadraría:
+ *  se sustituye por la base sobre la que se calculó la comisión. */
+function filasMensuales(meses: MesLedger[], informativa = false) {
   return meses.map((m) => ({
     Año: m.anio,
     Mes: nombreMes(m.anio, m.mes),
@@ -22,9 +27,10 @@ function filasMensuales(meses: MesLedger[]) {
     Depósitos: r2(m.depositos),
     Retiros: r2(m.retiros),
     "Base operativa": r2(m.baseOperativa),
-    "Rend. bruto": r2(m.rendBruto),
-    Comisión: r2(m.comision),
-    "Rend. neto": r2(m.rendNeto),
+    Resultado: r2(m.rendBruto),
+    ...(informativa
+      ? { "Base comisión": r2(m.baseComision), "Comisión (cobrada aparte)": r2(m.comision) }
+      : { Comisión: r2(m.comision), "Rend. neto": r2(m.rendNeto) }),
     "ROI %": r4(m.roiMes * 100),
     "Saldo final": r2(m.saldoFinal),
   }));
@@ -59,14 +65,14 @@ function hoja(rows: Record<string, unknown>[]) {
 /** Workbook por cliente: hoja mensual + hoja anual. */
 export function workbookCliente(item: ItemLedger): Buffer {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, hoja(filasMensuales(item.meses)), "Mensual");
+  XLSX.utils.book_append_sheet(wb, hoja(filasMensuales(item.meses, item.comisionInformativa)), "Mensual");
   XLSX.utils.book_append_sheet(wb, hoja(filasAnuales(item.porAnio)), "Anual");
   return XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
 }
 
 /** CSV mensual por cliente. */
 export function csvCliente(item: ItemLedger): string {
-  const ws = XLSX.utils.json_to_sheet(filasMensuales(item.meses));
+  const ws = XLSX.utils.json_to_sheet(filasMensuales(item.meses, item.comisionInformativa));
   return XLSX.utils.sheet_to_csv(ws);
 }
 
@@ -85,7 +91,7 @@ export function workbookConsolidado(items: ItemLedger[]): Buffer {
   XLSX.utils.book_append_sheet(wb, hoja(resumen), "Resumen");
 
   const todos = items.flatMap((it) =>
-    filasMensuales(it.meses).map((f) => ({ Cliente: it.cliente.nombre, ...f })),
+    filasMensuales(it.meses, it.comisionInformativa).map((f) => ({ Cliente: it.cliente.nombre, ...f })),
   );
   XLSX.utils.book_append_sheet(wb, hoja(todos), "Detalle mensual");
 

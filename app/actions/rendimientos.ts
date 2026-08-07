@@ -67,6 +67,8 @@ export async function guardarRendimiento(input: unknown): Promise<ActionResult> 
         mes: d.mes,
         modo: d.modo,
         valor: d.valor.toFixed(4),
+        resultadoComisionable:
+          d.resultadoComisionable != null ? d.resultadoComisionable.toFixed(2) : null,
         descripcion: d.descripcion ?? null,
       })
       .onConflictDoUpdate({
@@ -78,6 +80,10 @@ export async function guardarRendimiento(input: unknown): Promise<ActionResult> 
         set: {
           modo: d.modo,
           valor: d.valor.toFixed(4),
+          // Se reescribe SIEMPRE (incluido a NULL): si no, al reeditar un mes
+          // quedaría una base de comisión vieja que ya no corresponde al valor.
+          resultadoComisionable:
+            d.resultadoComisionable != null ? d.resultadoComisionable.toFixed(2) : null,
           descripcion: d.descripcion ?? null,
           updatedAt: new Date(),
         },

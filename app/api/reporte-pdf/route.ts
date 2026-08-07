@@ -71,6 +71,7 @@ export async function GET(req: Request) {
     generadoEl: formatFechaHora(new Date()),
     meses: mesesPdf,
     resumen: resumenPdf,
+    comisionInformativa: ledger.config.comisionInformativa === true,
   }) as unknown as ReactElement<DocumentProps>;
   const buffer = await renderToBuffer(elemento);
 

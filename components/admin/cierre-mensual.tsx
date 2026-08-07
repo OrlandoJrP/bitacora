@@ -24,6 +24,10 @@ export type RendimientoLite = {
   mes: number;
   modo: Modo;
   valor: number;
+  /** Base de comisión propia del mes (null = se comisiona el resultado entero).
+   *  Debe viajar hasta aquí: la vista previa reconstruye TODA la cadena y sin
+   *  esto el déficit acumulado saldría mal en cuentas con comisión informativa. */
+  resultadoComisionable: number | null;
   descripcion: string | null;
 };
 export type MovimientoLite = {
@@ -43,11 +47,18 @@ export type ClienteCierre = {
   movimientos: MovimientoLite[];
 };
 
-type Row = { modo: Modo; valor: string; descripcion: string };
+type Row = { modo: Modo; valor: string; comisionable: string; descripcion: string };
 
 /** Fila por defecto: evita crashear si la lista de clientes crece tras una
  *  revalidación (un cliente nuevo aún sin entrada en el estado `rows`). */
-const ROW_VACIA: Row = { modo: "porcentaje", valor: "", descripcion: "" };
+const ROW_VACIA: Row = { modo: "porcentaje", valor: "", comisionable: "", descripcion: "" };
+
+/** Base de comisión escrita por el operador (vacío = comisiona el resultado entero). */
+function baseComisionable(row: Row): number | null {
+  const t = row.comisionable.trim();
+  if (t === "" || Number.isNaN(Number(t))) return null;
+  return Number(t);
+}
 
 const MODO_LABEL: Record<Modo, string> = {
   porcentaje: "Porcentaje (%)",
@@ -83,6 +94,7 @@ export function CierreMensual({
       out[c.id] = {
         modo: ex?.modo ?? "porcentaje",
         valor: ex ? String(ex.valor) : "",
+        comisionable: ex?.resultadoComisionable != null ? String(ex.resultadoComisionable) : "",
         descripcion: ex?.descripcion ?? "",
       };
     }
@@ -103,7 +115,14 @@ export function CierreMensual({
     const row = rows[c.id] ?? ROW_VACIA;
     if (row.valor.trim() === "" || Number.isNaN(Number(row.valor))) return null;
     const rends = c.rendimientos.filter((r) => !(r.anio === anio && r.mes === mes));
-    rends.push({ anio, mes, modo: row.modo, valor: Number(row.valor), descripcion: null });
+    rends.push({
+      anio,
+      mes,
+      modo: row.modo,
+      valor: Number(row.valor),
+      resultadoComisionable: baseComisionable(row),
+      descripcion: null,
+    });
     const meses = construirCadena({
       capitalInicial: c.capitalInicial,
       fechaIngreso: c.fechaIngreso,
@@ -140,6 +159,7 @@ export function CierreMensual({
         ex &&
         ex.modo === row.modo &&
         ex.valor === Number(row.valor) &&
+        (ex.resultadoComisionable ?? null) === baseComisionable(row) &&
         (ex.descripcion ?? "") === row.descripcion
       ) {
         return false;
@@ -163,6 +183,7 @@ export function CierreMensual({
           mes,
           modo: row.modo,
           valor: Number(row.valor),
+          resultadoComisionable: baseComisionable(row),
           descripcion: row.descripcion || null,
         };
       });
@@ -319,6 +340,7 @@ function FilaCierre({
         mes,
         modo: row.modo,
         valor: Number(row.valor),
+        resultadoComisionable: baseComisionable(row),
         descripcion: row.descripcion || null,
       });
       res.ok ? toast.success(`${cliente.nombre}: guardado.`) : toast.error(res.error);
@@ -378,8 +400,42 @@ function FilaCierre({
           />
         </div>
 
+        {cliente.config.comisionInformativa && (
+          <div className="lg:col-span-3">
+            <label
+              htmlFor={`comisionable-${cliente.id}`}
+              className="text-xs text-muted-foreground"
+            >
+              Base de comisión del mes (opcional)
+            </label>
+            <div className="relative mt-1 max-w-xs">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                $
+              </span>
+              <Input
+                id={`comisionable-${cliente.id}`}
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                value={row.comisionable}
+                onChange={(e) => setRow({ comisionable: e.target.value })}
+                placeholder="Vacío = se comisiona el resultado completo"
+                className="pl-7"
+              />
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Úsala si parte del resultado no entra en el reparto (recompensas del bróker,
+              dividendos): escribe aquí solo el resultado de trading.
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center justify-between gap-3 lg:flex-nowrap lg:justify-end">
-          <Preview p={preview} comisionPct={comisionPct} />
+          <Preview
+            p={preview}
+            comisionPct={comisionPct}
+            informativa={cliente.config.comisionInformativa === true}
+          />
           <Button variant="gold" size="sm" onClick={guardar} disabled={pending}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Guardar
@@ -390,7 +446,15 @@ function FilaCierre({
   );
 }
 
-function Preview({ p, comisionPct }: { p: MesLedger | null; comisionPct: number }) {
+function Preview({
+  p,
+  comisionPct,
+  informativa,
+}: {
+  p: MesLedger | null;
+  comisionPct: number;
+  informativa: boolean;
+}) {
   if (!p) return <span className="text-xs text-muted-foreground">Vista previa…</span>;
   return (
     <div className="text-right text-xs">
@@ -398,7 +462,7 @@ function Preview({ p, comisionPct }: { p: MesLedger | null; comisionPct: number 
         Base: <MoneyText value={p.baseOperativa} className="text-foreground" />
       </div>
       <div className="text-muted-foreground">
-        Comisión ({comisionPct}%):{" "}
+        Comisión ({comisionPct}%){informativa ? " · cobrada aparte" : ""}:{" "}
         <span className="text-brand-gold-600">
           <MoneyText value={p.comision} />
         </span>
@@ -412,7 +476,7 @@ function Preview({ p, comisionPct }: { p: MesLedger | null; comisionPct: number 
         </div>
       )}
       <div className="font-medium">
-        Neto:{" "}
+        {informativa ? "Resultado" : "Neto"}:{" "}
         <span className={p.rendNeto >= 0 ? "text-pos" : "text-neg"}>
           {formatUSDSigned(p.rendNeto)} ({formatPct(p.roiMes)})
         </span>

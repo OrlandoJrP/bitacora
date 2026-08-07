@@ -53,6 +53,11 @@ export const clientes = pgTable("clientes", {
    *  comisión 33.333% con política deficit_pnl (66.66/33.33 con déficit). */
   comisionPct: numeric("comision_pct", { precision: 6, scale: 3 }),
   politicaComision: politicaComisionEnum("politica_comision"),
+  /** true = la comisión NO se descuenta del saldo: se devenga como informativa.
+   *  Para cuentas cuyos saldos históricos son BRUTOS y el operador cobró por
+   *  fuera (p. ej. Daniel Flores: el cliente retiraba y le pasaba el 35%).
+   *  false (default) = el saldo importado ya viene neto (p. ej. Lenin). */
+  comisionInformativa: boolean("comision_informativa").notNull().default(false),
   notas: text("notas"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -114,6 +119,10 @@ export const rendimientosMensuales = pgTable(
     mes: integer("mes").notNull(),
     modo: modoRendimientoEnum("modo").notNull(),
     valor: numeric("valor", { precision: 16, scale: 4 }).notNull(),
+    /** Base de comisión del mes cuando difiere del resultado derivado (NULL =
+     *  se usa el resultado completo). Sirve para excluir del reparto conceptos
+     *  que son 100% del cliente: recompensas del bróker, dividendos, etc. */
+    resultadoComisionable: numeric("resultado_comisionable", { precision: 14, scale: 2 }),
     descripcion: text("descripcion"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

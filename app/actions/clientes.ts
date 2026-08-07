@@ -53,6 +53,7 @@ export async function crearCliente(
         capitalInicial: d.capitalInicial.toFixed(2),
         comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
         politicaComision: d.politicaComision ?? null,
+        comisionInformativa: d.comisionInformativa === true,
         notas: d.notas ?? null,
       })
       .returning();
@@ -81,6 +82,7 @@ export async function crearCliente(
       capitalInicial: d.capitalInicial,
       comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
       politicaComision: d.politicaComision ?? null,
+      comisionInformativa: d.comisionInformativa === true,
     },
   });
 
@@ -109,6 +111,9 @@ export async function editarCliente(input: unknown): Promise<ActionResult> {
         capitalInicial: d.capitalInicial.toFixed(2),
         comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
         politicaComision: d.politicaComision ?? null,
+        // Si el payload no trae el campo, se conserva: un llamador que no lo
+        // envíe no puede apagar en silencio una condición del acuerdo.
+        comisionInformativa: d.comisionInformativa ?? actual.comisionInformativa,
         estado: d.estado,
         notas: d.notas ?? null,
         updatedAt: new Date(),
@@ -133,6 +138,7 @@ export async function editarCliente(input: unknown): Promise<ActionResult> {
       estado: d.estado,
       comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
       politicaComision: d.politicaComision ?? null,
+      comisionInformativa: d.comisionInformativa === true,
     },
   });
 

@@ -26,6 +26,7 @@ export type ClienteEditable = {
   estado: "activo" | "inactivo";
   comisionPct: string | null;
   politicaComision: "normal" | "hwm_saldo" | "deficit_pnl" | null;
+  comisionInformativa: boolean;
   notas: string | null;
 };
 
@@ -54,6 +55,7 @@ export function ClienteFormDialog({
       capitalInicial: String(fd.get("capitalInicial") ?? ""),
       comisionPct: String(fd.get("comisionPct") ?? ""),
       politicaComision: String(fd.get("politicaComision") ?? ""),
+      comisionInformativa: fd.get("comisionInformativa") === "on",
       notas: String(fd.get("notas") ?? ""),
     };
     setErrs({});
@@ -164,6 +166,21 @@ export function ClienteFormDialog({
               </select>
             </div>
           </div>
+          <label className="flex items-start gap-2.5 rounded-md border border-input p-3">
+            <input
+              type="checkbox"
+              name="comisionInformativa"
+              defaultChecked={cliente?.comisionInformativa ?? false}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-brand-gold"
+            />
+            <span className="text-sm">
+              Comisión informativa
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Los saldos cargados son brutos y el cliente ya te pagó la comisión por fuera de la
+                cuenta. Se devenga y se muestra, pero no vuelve a descontarse del saldo.
+              </span>
+            </span>
+          </label>
           {editMode && (
             <div className="space-y-1.5">
               <Label htmlFor="estado">Estado</Label>

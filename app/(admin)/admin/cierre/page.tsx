@@ -25,6 +25,7 @@ export default async function CierrePage() {
       mes: r.mes,
       modo: r.modo,
       valor: num(r.valor),
+      resultadoComisionable: r.resultadoComisionable != null ? num(r.resultadoComisionable) : null,
       descripcion: r.descripcion,
     })),
     movimientos: l.movimientos.map((m) => ({

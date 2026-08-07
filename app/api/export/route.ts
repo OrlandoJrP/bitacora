@@ -39,6 +39,7 @@ export async function GET(req: Request) {
       gananciaNeta: l.resumen.gananciaNeta,
       roiAcumulado: l.resumen.roiAcumulado,
     },
+    comisionInformativa: l.config.comisionInformativa === true,
   }));
 
   const xlsx = (buf: Buffer, name: string) =>

@@ -21,6 +21,7 @@
     "db:seed:demo": "tsx scripts/seed.ts --demo",
     "db:seed-lenin": "tsx scripts/seed-lenin.ts",
     "db:seed-fondo": "tsx scripts/seed-fondo.ts",
+    "db:seed-daniel": "tsx scripts/seed-daniel.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

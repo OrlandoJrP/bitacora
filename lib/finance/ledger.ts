@@ -49,6 +49,10 @@ export interface RendimientoInput {
   mes: number; // 1–12
   modo: Modo;
   valor: number | string; // interpretación según `modo`
+  /** Base de comisión del mes cuando difiere del resultado del mes (null =
+   *  se comisiona el resultado completo). Permite dejar fuera del reparto
+   *  conceptos que son 100% del cliente (recompensas del bróker, dividendos). */
+  resultadoComisionable?: number | string | null;
   descripcion?: string | null;
 }
 
@@ -77,6 +81,13 @@ export interface LedgerConfig {
   pierdeSoloCliente: boolean;
   /** Si se omite, se deriva: usaHighWaterMark ? "hwm_saldo" : "normal". */
   politica?: PoliticaComision;
+  /** true = la comisión se DEVENGA pero no se descuenta del saldo (informativa).
+   *  Se usa cuando los saldos cargados son BRUTOS y el operador ya cobró por
+   *  fuera de la cuenta (caso Daniel Flores: el cliente retiraba y le pasaba el
+   *  35%). Con false (default) la comisión reduce el saldo, como siempre.
+   *  Aplica a los TRES modos: en una cuenta de saldos brutos el saldo nunca
+   *  puede llevar la comisión descontada o se separaría del saldo real. */
+  comisionInformativa?: boolean;
 }
 
 export interface LedgerInput {
@@ -100,6 +111,9 @@ export interface MesLedger {
   modo: Modo | null; // null si el mes no tiene rendimiento cargado
   valor: number | null;
   rendBruto: number;
+  /** Importe sobre el que se calculó la comisión. Igual a rendBruto salvo que
+   *  el mes traiga una base propia (conceptos que no entran en el reparto). */
+  baseComision: number;
   comision: number;
   rendNeto: number;
   saldoFinal: number;
@@ -141,9 +155,18 @@ function cmpYM(a: YM, b: YM): number {
 
 /* ── Construcción de la cadena mensual continua ──────────────────────────── */
 
+/** Base de comisión del mes: la propia si está cargada, si no el resultado.
+ *  Trata null/undefined/"" como ausente, pero respeta un 0 explícito. */
+function baseComisionable(r: RendimientoInput, rendBruto: number): number {
+  const v = r.resultadoComisionable;
+  if (v === null || v === undefined || v === "") return rendBruto;
+  return round2(num(v));
+}
+
 export function construirCadena(input: LedgerInput): MesLedger[] {
   const start = ymOf(input.fechaIngreso);
   const { comisionPct, pierdeSoloCliente } = input.config;
+  const comisionInformativa = input.config.comisionInformativa === true;
 
   // Índice de rendimientos por mes (único por mes garantizado en BD).
   const rendByKey = new Map<string, RendimientoInput>();
@@ -200,6 +223,7 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
 
     const r = rendByKey.get(k);
     let rendBruto = 0;
+    let baseCom = 0;
     let comision = 0;
     let rendNeto = 0;
     let saldoFinal = baseOperativa;
@@ -211,18 +235,52 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
       valor = num(r.valor);
 
       if (r.modo === "saldo_final") {
-        // El operador escribe directamente el saldo final neto.
+        // El operador escribe directamente el saldo final. El saldo MANDA:
+        // nunca se le resta nada derivado.
         saldoFinal = round2(valor);
         rendNeto = round2(saldoFinal - baseOperativa);
         rendBruto = rendNeto; // sin concepto de "bruto" separado en este modo
-        comision = 0;
-        // En deficit_pnl el déficit sigue vivo aunque el mes venga "fijado":
-        // así el histórico importado por saldo_final arrastra el déficit real.
-        if (politica === "deficit_pnl") {
-          deficitAcum =
-            rendNeto < 0
-              ? round2(deficitAcum - rendNeto)
-              : Math.max(0, round2(deficitAcum - rendNeto));
+
+        if (comisionInformativa) {
+          // El saldo cargado es BRUTO y el operador ya cobró por fuera: la
+          // comisión se DEVENGA (informativa) y no toca el saldo. La base
+          // puede ser menor que el resultado del mes si hay conceptos que son
+          // 100% del cliente (recompensas del bróker, dividendos).
+          const baseCom = baseComisionable(r, rendBruto);
+
+          if (politica === "deficit_pnl") {
+            if (baseCom < 0) {
+              deficitAcum = round2(deficitAcum - baseCom);
+              comision = 0;
+            } else if (baseCom > 0) {
+              const recuperado = Math.min(baseCom, deficitAcum);
+              const facturable = round2(baseCom - recuperado);
+              deficitAcum = round2(deficitAcum - recuperado);
+              comision = round2((facturable * comisionPct) / 100);
+            } else {
+              comision = 0;
+            }
+          } else if (baseCom > 0) {
+            let facturable = baseCom;
+            if (politica === "hwm_saldo") {
+              facturable = Math.max(0, Math.min(baseCom, round2(saldoFinal - hwm)));
+            }
+            comision = round2((facturable * comisionPct) / 100);
+          } else if (baseCom < 0 && !pierdeSoloCliente) {
+            comision = round2((baseCom * comisionPct) / 100);
+          } else {
+            comision = 0;
+          }
+        } else {
+          comision = 0;
+          // En deficit_pnl el déficit sigue vivo aunque el mes venga "fijado":
+          // así el histórico importado por saldo_final arrastra el déficit real.
+          if (politica === "deficit_pnl") {
+            deficitAcum =
+              rendNeto < 0
+                ? round2(deficitAcum - rendNeto)
+                : Math.max(0, round2(deficitAcum - rendNeto));
+          }
         }
       } else {
         if (r.modo === "porcentaje") {
@@ -231,36 +289,47 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
           rendBruto = round2(valor); // modo "monto": rendimiento bruto directo en USD
         }
 
+        // Con comisión informativa la base puede ser menor que el resultado
+        // (recompensas del bróker y demás conceptos que son 100% del cliente).
+        const baseCom = comisionInformativa ? baseComisionable(r, rendBruto) : rendBruto;
+
         if (politica === "deficit_pnl") {
           // Las pérdidas alimentan el déficit; las ganancias primero lo
           // recuperan y solo el excedente paga comisión.
-          if (rendBruto < 0) {
-            deficitAcum = round2(deficitAcum - rendBruto);
+          if (baseCom < 0) {
+            deficitAcum = round2(deficitAcum - baseCom);
             comision = 0;
-          } else if (rendBruto > 0) {
-            const recuperado = Math.min(rendBruto, deficitAcum);
-            const billable = round2(rendBruto - recuperado);
+          } else if (baseCom > 0) {
+            const recuperado = Math.min(baseCom, deficitAcum);
+            const billable = round2(baseCom - recuperado);
             deficitAcum = round2(deficitAcum - recuperado);
             comision = round2((billable * comisionPct) / 100);
           } else {
             comision = 0;
           }
-        } else if (rendBruto > 0) {
-          let billable = rendBruto;
+        } else if (baseCom > 0) {
+          let billable = baseCom;
           if (politica === "hwm_saldo") {
             const preFee = baseOperativa + rendBruto;
-            billable = Math.max(0, Math.min(rendBruto, round2(preFee - hwm)));
+            billable = Math.max(0, Math.min(baseCom, round2(preFee - hwm)));
           }
           comision = round2((billable * comisionPct) / 100);
-        } else if (rendBruto < 0 && !pierdeSoloCliente) {
+        } else if (baseCom < 0 && !pierdeSoloCliente) {
           // El operador comparte la pérdida (clawback): comisión negativa que
           // amortigua la pérdida del cliente. Solo si pierde_solo_cliente = false.
-          comision = round2((rendBruto * comisionPct) / 100);
+          comision = round2((baseCom * comisionPct) / 100);
         } else {
           comision = 0; // default: las pérdidas no generan comisión
         }
 
-        rendNeto = round2(rendBruto - comision);
+        if (comisionInformativa) {
+          // Saldos BRUTOS: la comisión ya se liquidó fuera de la cuenta, así que
+          // NO puede volver a restarse aquí (si no, el saldo del portal se
+          // separaría del saldo real del bróker mes a mes).
+          rendNeto = rendBruto;
+        } else {
+          rendNeto = round2(rendBruto - comision);
+        }
         saldoFinal = round2(baseOperativa + rendNeto);
       }
     }
@@ -279,6 +348,7 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
       modo,
       valor,
       rendBruto,
+      baseComision: baseCom,
       comision,
       rendNeto,
       saldoFinal,

@@ -46,6 +46,7 @@ function construir(
     ...cfg,
     comisionPct: cliente.comisionPct != null ? num(cliente.comisionPct) : cfg.comisionPct,
     politica: cliente.politicaComision ?? cfg.politica,
+    comisionInformativa: cliente.comisionInformativa,
   };
   const meses = construirCadena({
     capitalInicial: cliente.capitalInicial,
@@ -57,6 +58,7 @@ function construir(
       mes: r.mes,
       modo: r.modo,
       valor: r.valor,
+      resultadoComisionable: r.resultadoComisionable,
       descripcion: r.descripcion,
     })),
     movimientos: movs.map((m) => ({

@@ -64,6 +64,9 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
   const id = ledger.cliente.id;
   const chart = ledger.meses.map((m) => ({ label: etiquetaMesCorta(m.anio, m.mes), saldo: m.saldoFinal }));
   const meses = [...ledger.meses].reverse();
+  // En cuentas con comisión informativa el saldo es BRUTO: la comisión ya se
+  // liquidó fuera de la cuenta, así que "neto" no es bruto − comisión.
+  const informativa = ledger.config.comisionInformativa === true;
 
   return (
     <div className="space-y-6">
@@ -89,10 +92,14 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
         <StatCard label="Saldo actual" value={<MoneyText value={r.saldoActual} />} />
         <StatCard label="ROI acumulado" value={<PctText fraction={r.roiAcumulado} />} />
         <StatCard
-          label="Ganancia neta"
+          label={informativa ? "Resultado generado" : "Ganancia neta"}
           value={<span className={r.gananciaNeta >= 0 ? "text-pos" : "text-neg"}>{formatUSDSigned(r.gananciaNeta)}</span>}
         />
-        <StatCard label="Comisión generada" value={<MoneyText value={r.comisionOperador} />} accent />
+        <StatCard
+          label={informativa ? "Comisión (cobrada aparte)" : "Comisión generada"}
+          value={<MoneyText value={r.comisionOperador} />}
+          accent
+        />
       </div>
 
       <Card>
@@ -107,7 +114,11 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Detalle mensual</CardTitle>
-          <CardDescription>Vista del operador (incluye bruto y comisión).</CardDescription>
+          <CardDescription>
+            {informativa
+              ? "Vista del operador. Los saldos son los de la cuenta real (brutos): la comisión se liquidó fuera, por eso no se resta aquí."
+              : "Vista del operador (incluye bruto y comisión)."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -115,9 +126,12 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
               <TableRow>
                 <TableHead>Mes</TableHead>
                 <TableHead className="text-right">Base</TableHead>
-                <TableHead className="text-right">Bruto</TableHead>
-                <TableHead className="text-right">Comisión</TableHead>
-                <TableHead className="text-right">Neto</TableHead>
+                <TableHead className="text-right">Resultado</TableHead>
+                {informativa && <TableHead className="text-right">Base comisión</TableHead>}
+                <TableHead className="text-right">
+                  {informativa ? "Comisión (aparte)" : "Comisión"}
+                </TableHead>
+                {!informativa && <TableHead className="text-right">Neto</TableHead>}
                 <TableHead className="text-right">ROI</TableHead>
                 <TableHead className="text-right">Saldo final</TableHead>
               </TableRow>
@@ -128,10 +142,17 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
                   <TableCell className="font-medium">{nombreMes(m.anio, m.mes)}</TableCell>
                   <TableCell className="text-right"><MoneyText value={m.baseOperativa} /></TableCell>
                   <TableCell className="text-right"><MoneyText value={m.rendBruto} signed /></TableCell>
+                  {informativa && (
+                    <TableCell className="text-right text-muted-foreground">
+                      <MoneyText value={m.baseComision} signed />
+                    </TableCell>
+                  )}
                   <TableCell className="text-right text-brand-gold-600"><MoneyText value={m.comision} /></TableCell>
-                  <TableCell className={`text-right ${m.rendNeto >= 0 ? "text-pos" : "text-neg"}`}>
-                    {formatUSDSigned(m.rendNeto)}
-                  </TableCell>
+                  {!informativa && (
+                    <TableCell className={`text-right ${m.rendNeto >= 0 ? "text-pos" : "text-neg"}`}>
+                      {formatUSDSigned(m.rendNeto)}
+                    </TableCell>
+                  )}
                   <TableCell className="text-right">{formatPct(m.roiMes)}</TableCell>
                   <TableCell className="text-right font-semibold"><MoneyText value={m.saldoFinal} /></TableCell>
                 </TableRow>

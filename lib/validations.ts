@@ -34,6 +34,14 @@ export const crearClienteSchema = z.object({
     .refine((v) => v == null || (v >= 0 && v <= 100), "La comisión debe estar entre 0 y 100%.")
     .optional(),
   politicaComision: politicaOpcional.optional(),
+  /** true = la comisión se devenga sin descontarse del saldo (saldos brutos,
+   *  el operador ya cobró por fuera). Llega del checkbox como "on"/"true". */
+  comisionInformativa: z
+    .preprocess(
+      (v) => (v === undefined ? undefined : v === true || v === "on" || v === "true"),
+      z.boolean().optional(),
+    )
+    .optional(),
   notas: z.string().max(1000).optional().nullable(),
 });
 
@@ -69,6 +77,9 @@ export const guardarRendimientoSchema = z
     mes: z.coerce.number().int().min(1).max(12),
     modo: modoRendimiento,
     valor: numeroDesdeForm,
+    /** Base de comisión del mes cuando difiere del resultado (null = comisiona
+     *  el resultado entero). Solo aplica a cuentas con comisión informativa. */
+    resultadoComisionable: numeroOpcionalDesdeForm.optional(),
     descripcion: z.string().max(500).optional().nullable(),
   })
   .refine(

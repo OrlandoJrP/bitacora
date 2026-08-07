@@ -1,0 +1,2 @@
+ALTER TABLE "clientes" ADD COLUMN "comision_informativa" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "rendimientos_mensuales" ADD COLUMN "resultado_comisionable" numeric(14, 2);
