@@ -102,6 +102,33 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
         />
       </div>
 
+      {r.capitalBase != null && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Capital base pactado</CardTitle>
+            <CardDescription>
+              {r.faltaParaBase > 0
+                ? "La cuenta está por debajo de la base acordada. Mientras siga así no hay ganancia que repartir, así que los cierres van con ganancia liquidada 0."
+                : "La cuenta está por encima de la base acordada: lo que la supera es lo repartible."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <StatCard label="Base acordada" value={<MoneyText value={r.capitalBase} />} />
+            <StatCard label="Saldo actual" value={<MoneyText value={r.saldoActual} />} />
+            <StatCard
+              label={r.faltaParaBase > 0 ? "Falta para volver a cobrar" : "Por encima de la base"}
+              value={
+                <span className={r.faltaParaBase > 0 ? "text-neg" : "text-pos"}>
+                  {formatUSDSigned(
+                    r.faltaParaBase > 0 ? -r.faltaParaBase : r.saldoActual - r.capitalBase,
+                  )}
+                </span>
+              }
+            />
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{ledger.cliente.nombre} · saldo en el tiempo</CardTitle>
@@ -172,7 +199,7 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
               <TableRow>
                 <TableHead>Año</TableHead>
                 <TableHead className="text-right">Aporte neto</TableHead>
-                <TableHead className="text-right">Resultado neto</TableHead>
+                <TableHead className="text-right">{informativa ? "Resultado" : "Resultado neto"}</TableHead>
                 <TableHead className="text-right">Comisión</TableHead>
                 <TableHead className="text-right">ROI anual</TableHead>
                 <TableHead className="text-right">Saldo cierre</TableHead>
@@ -206,6 +233,9 @@ function ReporteConsolidado({
   ledgers: Awaited<ReturnType<typeof cargarLedgersTodos>>;
 }) {
   const { anio } = mesActual();
+  // Si alguna cuenta lleva comisión informativa, el total mezcla saldos brutos
+  // con netos: no se puede rotular "neto" sin faltar a la verdad.
+  const hayInformativa = ledgers.some((l) => l.config.comisionInformativa === true);
 
   const aum = ledgers
     .filter((l) => l.cliente.estado === "activo")
@@ -242,7 +272,10 @@ function ReporteConsolidado({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard label="AUM" value={<MoneyText value={aum} />} />
-        <StatCard label="Resultado neto total" value={<MoneyText value={netoTotal} signed />} />
+        <StatCard
+          label={hayInformativa ? "Resultado total generado" : "Resultado neto total"}
+          value={<MoneyText value={netoTotal} signed />}
+        />
         <StatCard label="Comisión acumulada" value={<MoneyText value={comisionTotal} />} accent />
         <StatCard label="Clientes" value={ledgers.length} />
       </div>

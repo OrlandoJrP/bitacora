@@ -12,13 +12,15 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { connectForScript } from "./db-connect";
 import { clientes, movimientos, rendimientosMensuales } from "../drizzle/schema";
-import { construirCadena, round2, type LedgerInput } from "../lib/finance/ledger";
+import { construirCadena, num, round2, type LedgerInput } from "../lib/finance/ledger";
 import {
   APORTADO_ESPERADO,
+  CAPITAL_BASE,
   CLIENTE,
   COMISION_DEVENGADA_ESPERADA,
-  DEFICIT_PENDIENTE_ESPERADO,
   ESPERADO,
+  FALTA_PARA_BASE_ESPERADO,
+  GANANCIA_LIQUIDADA_ESPERADA,
   MOVIMIENTOS,
   RENDIMIENTOS,
   RESULTADO_TOTAL_ESPERADO,
@@ -53,6 +55,7 @@ function inputDesdeConstantes(): LedgerInput {
       pierdeSoloCliente: true,
       politica: CLIENTE.politicaComision,
       comisionInformativa: CLIENTE.comisionInformativa,
+      capitalBase: Number(CLIENTE.capitalBase),
     },
   };
 }
@@ -73,7 +76,6 @@ function verificar(input: LedgerInput, etiqueta: string): boolean {
     const problemas: string[] = [];
     if (m.saldoFinal !== e.saldoFinal) problemas.push(`saldo ${m.saldoFinal} ≠ ${e.saldoFinal}`);
     if (m.comision !== e.comision) problemas.push(`comisión ${m.comision} ≠ ${e.comision}`);
-    if (m.deficitAcum !== e.deficit) problemas.push(`déficit ${m.deficitAcum} ≠ ${e.deficit}`);
     if (problemas.length) {
       console.error(`  ✗ ${String(e.mes).padStart(2, "0")}/${e.anio}: ${problemas.join(" | ")}`);
       fallos++;
@@ -86,12 +88,22 @@ function verificar(input: LedgerInput, etiqueta: string): boolean {
   const comisionTotal = round2(meses.reduce((s, m) => s + m.comision, 0));
   const aportado = round2(Number(CLIENTE.capitalInicial) + totalDepositos);
 
+  // OJO: se suma desde `input`, NO desde las constantes del módulo. Si leyera
+  // RENDIMIENTOS, la pasada post-import compararía el archivo contra sí mismo
+  // y no detectaría que la BD quedó con otros valores.
+  const gananciaLiquidada = round2(
+    input.rendimientos.reduce((s, r) => s + num(r.resultadoComisionable), 0),
+  );
+  const faltaParaBase = round2(Math.max(0, CAPITAL_BASE - ultimo.saldoFinal));
   const checks: Array<[string, number, number]> = [
     ["Aportado (capital inicial + depósitos)", aportado, APORTADO_ESPERADO],
     ["Retirado de la cuenta", totalRetiros, RETIRADO_ESPERADO],
     ["Saldo actual", ultimo.saldoFinal, SALDO_ACTUAL_ESPERADO],
+    ["Ganancia liquidada (base del 35%)", gananciaLiquidada, GANANCIA_LIQUIDADA_ESPERADA],
     ["Comisión devengada", comisionTotal, COMISION_DEVENGADA_ESPERADA],
-    ["Déficit pendiente", ultimo.deficitAcum, DEFICIT_PENDIENTE_ESPERADO],
+    ["Falta para volver a la base", faltaParaBase, FALTA_PARA_BASE_ESPERADO],
+    // El 35% tiene que salir exacto de la ganancia liquidada.
+    ["Comisión = 35% de la ganancia liquidada", comisionTotal, round2(gananciaLiquidada * 0.35)],
   ];
   for (const [etq, real, esperado] of checks) {
     if (real !== esperado) {
@@ -100,38 +112,35 @@ function verificar(input: LedgerInput, etiqueta: string): boolean {
     }
   }
 
-  // Anclas INDEPENDIENTES contra el reporte de Exness. Ojo: comparar
-  // "aportado − retirado + Σ rendNeto" contra el saldo NO sirve como
-  // verificación: en modo saldo_final esa suma telescopa al último saldo por
-  // construcción y no puede fallar nunca. Lo que sí detecta un error de
-  // captura es contrastar los totales contra las cifras del propio bróker.
+  // Ancla contra el reporte de Exness. Ojo con dos trampas que ya estuvieron
+  // aquí: (a) comparar "aportado − retirado + Σ rendNeto" contra el saldo NO
+  // verifica nada, porque en modo saldo_final esa suma telescopa al último
+  // saldo por construcción; (b) derivar una constante de otras dos y luego
+  // compararla contra ellas tampoco, porque es una identidad.
+  //
+  // Lo que SÍ detecta un error de captura es esto: el resultado total sale de
+  // la cadena (capital inicial, 40 movimientos y 12 saldos de cierre) y se
+  // compara contra una cifra fija tomada del reporte. Si alguien toca un saldo
+  // o un movimiento, deja de cuadrar.
   const resultadoTotal = round2(meses.reduce((s, m) => s + m.rendNeto, 0));
-  const totalTrading = round2(
-    RENDIMIENTOS.reduce((s, r) => s + Number(r.resultadoComisionable), 0),
-  );
   if (resultadoTotal !== RESULTADO_TOTAL_ESPERADO) {
-    console.error(`  ✗ Resultado total: ${resultadoTotal} ≠ ${RESULTADO_TOTAL_ESPERADO}`);
+    console.error(`  ✗ Resultado total de la cuenta: ${resultadoTotal} ≠ ${RESULTADO_TOTAL_ESPERADO}`);
     fallos++;
   }
-  if (totalTrading !== RESULTADO_TRADING_ESPERADO) {
-    console.error(
-      `  ✗ Resultado de trading (Total Net Profit del reporte): ${totalTrading} ≠ ${RESULTADO_TRADING_ESPERADO}`,
-    );
-    fallos++;
-  }
-  // La diferencia entre ambos son las recompensas del bróker y los dividendos,
-  // que son 100% del cliente y no entran en el reparto.
-  const otros = round2(resultadoTotal - totalTrading);
-  if (otros !== round2(RESULTADO_TOTAL_ESPERADO - RESULTADO_TRADING_ESPERADO)) {
-    console.error(`  ✗ Recompensas + dividendos: ${otros} no cuadra`);
+  // RESULTADO_TRADING_ESPERADO es el "Total Net Profit" que declara Exness. No
+  // se puede recalcular desde la cadena mensual (el desglose trading vs
+  // recompensas no vive en la base), así que aquí solo se documenta la
+  // relación; no la tomes por una verificación.
+  if (round2(RESULTADO_TOTAL_ESPERADO - RESULTADO_TRADING_ESPERADO) !== 2934.31) {
+    console.error(`  ✗ Las constantes del reporte no cuadran entre sí: total − trading ≠ 2934.31`);
     fallos++;
   }
 
   if (fallos === 0) {
     console.log(
       `  ✓ ${ESPERADO.length} meses al centavo · saldo ${ultimo.saldoFinal.toFixed(2)} · aportado ${aportado.toFixed(2)} · ` +
-        `retirado ${totalRetiros.toFixed(2)} · resultado ${resultadoTotal.toFixed(2)} · comisión devengada ${comisionTotal.toFixed(2)} · ` +
-        `déficit ${ultimo.deficitAcum.toFixed(2)}`,
+        `retirado ${totalRetiros.toFixed(2)} · resultado ${resultadoTotal.toFixed(2)} · ganancia liquidada ${gananciaLiquidada.toFixed(2)} · ` +
+        `comisión ${comisionTotal.toFixed(2)} · falta para la base ${faltaParaBase.toFixed(2)}`,
     );
   }
   return fallos === 0;
@@ -169,6 +178,7 @@ async function seed(): Promise<void> {
             comisionPct: CLIENTE.comisionPct,
             politicaComision: CLIENTE.politicaComision,
             comisionInformativa: CLIENTE.comisionInformativa,
+            capitalBase: CLIENTE.capitalBase,
             estado: CLIENTE.estado,
             notas: CLIENTE.notas,
           })
@@ -183,6 +193,7 @@ async function seed(): Promise<void> {
             comisionPct: CLIENTE.comisionPct,
             politicaComision: CLIENTE.politicaComision,
             comisionInformativa: CLIENTE.comisionInformativa,
+            capitalBase: CLIENTE.capitalBase,
             estado: CLIENTE.estado,
             notas: CLIENTE.notas,
             updatedAt: new Date(),
@@ -227,10 +238,18 @@ async function seed(): Promise<void> {
       const pisados: string[] = [];
       for (const r of RENDIMIENTOS) {
         const p = previoPorMes.get(`${r.anio}-${r.mes}`);
-        if (p && Number(p.valor) !== Number(r.valor)) {
-          pisados.push(
-            `${String(r.mes).padStart(2, "0")}/${r.anio}: ${Number(p.valor).toFixed(2)} → ${Number(r.valor).toFixed(2)}`,
+        if (!p) continue;
+        const cambios: string[] = [];
+        if (Number(p.valor) !== Number(r.valor)) {
+          cambios.push(`saldo ${Number(p.valor).toFixed(2)} → ${Number(r.valor).toFixed(2)}`);
+        }
+        if (num(p.resultadoComisionable) !== Number(r.resultadoComisionable)) {
+          cambios.push(
+            `ganancia liquidada ${num(p.resultadoComisionable).toFixed(2)} → ${Number(r.resultadoComisionable).toFixed(2)}`,
           );
+        }
+        if (cambios.length) {
+          pisados.push(`${String(r.mes).padStart(2, "0")}/${r.anio}: ${cambios.join(" · ")}`);
         }
       }
       if (pisados.length) {
@@ -304,6 +323,7 @@ async function seed(): Promise<void> {
           pierdeSoloCliente: true,
           politica: cliDb!.politicaComision ?? CLIENTE.politicaComision,
           comisionInformativa: cliDb!.comisionInformativa,
+          capitalBase: cliDb!.capitalBase != null ? Number(cliDb!.capitalBase) : undefined,
         },
       };
 

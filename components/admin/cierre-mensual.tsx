@@ -348,6 +348,8 @@ function FilaCierre({
   }
 
   const adornment = row.modo === "porcentaje" ? "%" : "$";
+  // Cuentas con capital base pactado: el importe repartible se carga a mano.
+  const conBase = cliente.config.capitalBase != null;
 
   return (
     <Card>
@@ -404,9 +406,11 @@ function FilaCierre({
           <div className="lg:col-span-3">
             <label
               htmlFor={`comisionable-${cliente.id}`}
-              className="text-xs text-muted-foreground"
+              className="text-xs font-medium text-foreground"
             >
-              Base de comisión del mes (opcional)
+              {conBase
+                ? "Ganancia liquidada del mes (base de tu comisión)"
+                : "Base de comisión del mes (opcional)"}
             </label>
             <div className="relative mt-1 max-w-xs">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
@@ -419,13 +423,16 @@ function FilaCierre({
                 inputMode="decimal"
                 value={row.comisionable}
                 onChange={(e) => setRow({ comisionable: e.target.value })}
-                placeholder="Vacío = se comisiona el resultado completo"
+                placeholder={
+                  conBase ? "0.00 si este mes no hubo reparto" : "Vacío = se comisiona el resultado completo"
+                }
                 className="pl-7"
               />
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Úsala si parte del resultado no entra en el reparto (recompensas del bróker,
-              dividendos): escribe aquí solo el resultado de trading.
+              {conBase
+                ? "Escribe cuánto se repartió este mes por encima del capital base. Si no hubo reparto, déjalo en 0: vacío también cuenta como 0 y no genera comisión."
+                : "Úsala si parte del resultado no entra en el reparto (recompensas del bróker, dividendos): escribe aquí solo el resultado de trading."}
             </p>
           </div>
         )}

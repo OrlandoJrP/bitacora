@@ -36,6 +36,13 @@
       "when": 1786137830219,
       "tag": "0004_dear_beyonder",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786139990897,
+      "tag": "0005_nifty_maelstrom",
+      "breakpoints": true
     }
   ]
 }

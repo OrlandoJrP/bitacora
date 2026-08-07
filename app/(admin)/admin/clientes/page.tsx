@@ -87,6 +87,7 @@ export default async function ClientesPage() {
                         comisionPct: l.cliente.comisionPct,
                         politicaComision: l.cliente.politicaComision,
                         comisionInformativa: l.cliente.comisionInformativa,
+                        capitalBase: l.cliente.capitalBase,
                         notas: l.cliente.notas,
                       }}
                     />

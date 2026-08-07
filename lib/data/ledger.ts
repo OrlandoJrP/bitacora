@@ -47,6 +47,7 @@ function construir(
     comisionPct: cliente.comisionPct != null ? num(cliente.comisionPct) : cfg.comisionPct,
     politica: cliente.politicaComision ?? cfg.politica,
     comisionInformativa: cliente.comisionInformativa,
+    capitalBase: cliente.capitalBase != null ? num(cliente.capitalBase) : undefined,
   };
   const meses = construirCadena({
     capitalInicial: cliente.capitalInicial,
@@ -71,7 +72,7 @@ function construir(
   return {
     cliente,
     meses,
-    resumen: resumen(meses, cliente.capitalInicial, hasta.anio),
+    resumen: resumen(meses, cliente.capitalInicial, hasta.anio, config.capitalBase ?? null),
     porAnio: resumenPorAnio(meses),
     movimientos: movs,
     rendimientos: rends,

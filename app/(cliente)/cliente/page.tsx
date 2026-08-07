@@ -37,6 +37,10 @@ export default async function ResumenPage() {
   if (!ledger) notFound();
 
   const r = ledger.resumen;
+  // Cuentas de saldos brutos: la comisión del operador se liquidó por fuera,
+  // así que lo que aquí se ve es el RESULTADO de la cuenta, no lo que quedó
+  // neto para el cliente. Etiquetarlo como "ganancia" sería engañoso.
+  const informativa = ledger.config.comisionInformativa === true;
   const { anio } = mesActual();
   const stats = estadisticas(ledger.meses);
   const gananciaAnio = round2(
@@ -96,9 +100,12 @@ export default async function ResumenPage() {
 
           {/* Cifras clave dentro del héroe */}
           <div className="mt-6 grid grid-cols-1 gap-3 border-t border-white/10 pt-4 text-sm sm:grid-cols-3 sm:gap-6">
-            <HeroDato label="Aporte neto" value={formatUSD(r.aporteNeto)} />
             <HeroDato
-              label="Ganancia total"
+              label={informativa ? "Aportado − retirado" : "Aporte neto"}
+              value={formatUSD(r.aporteNeto)}
+            />
+            <HeroDato
+              label={informativa ? "Resultado de la cuenta" : "Ganancia total"}
               value={formatUSDSigned(r.gananciaNeta)}
               tone={r.gananciaNeta > 0 ? "pos" : r.gananciaNeta < 0 ? "neg" : undefined}
             />
@@ -115,9 +122,13 @@ export default async function ResumenPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         <Tile
           icon={<Coins className="h-4 w-4" />}
-          label="Ganancia total"
+          label={informativa ? "Resultado de la cuenta" : "Ganancia total"}
           main={<MoneyText value={r.gananciaNeta} signed colored />}
-          sub={`${formatPct(r.roiAcumulado)} desde tu ingreso`}
+          sub={
+            informativa
+              ? "Antes de la comisión, liquidada aparte"
+              : `${formatPct(r.roiAcumulado)} desde tu ingreso`
+          }
         />
         <Tile
           icon={<CalendarDays className="h-4 w-4" />}

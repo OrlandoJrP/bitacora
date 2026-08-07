@@ -702,3 +702,137 @@ describe("comisionInformativa — la comisión se devenga pero NO toca el saldo"
     expect(r.comisionOperador).toBe(700); // 350 + 350
   });
 });
+
+/* ══ Capital base pactado (cuenta Daniel Flores) ═══════════════════════════ */
+describe("capitalBase — cuánto falta para volver a cobrar", () => {
+  const CFG: LedgerConfig = {
+    comisionPct: 35,
+    usaHighWaterMark: false,
+    pierdeSoloCliente: true,
+    politica: "normal",
+    comisionInformativa: true,
+    capitalBase: 130000,
+  };
+  const meses = construirCadena({
+    capitalInicial: 100000,
+    fechaIngreso: "2026-03-01",
+    rendimientos: [
+      // Mes con liquidación: subió 20,000 pero solo 15,000 se repartieron.
+      { anio: 2026, mes: 3, modo: "saldo_final", valor: 120000, resultadoComisionable: 15000 },
+      // Mes en pérdida: no hay liquidación, la base propia es 0.
+      { anio: 2026, mes: 4, modo: "saldo_final", valor: 16346.13, resultadoComisionable: 0 },
+    ],
+    movimientos: [],
+    config: CFG,
+  });
+
+  it("cobra el 35% solo de la ganancia liquidada, sin tocar el saldo", () => {
+    const m = mes(meses, "2026-03");
+    expect(m.saldoFinal).toBe(120000);
+    expect(m.rendNeto).toBe(20000);
+    expect(m.baseComision).toBe(15000);
+    expect(m.comision).toBe(5250); // 35% de 15,000
+  });
+
+  it("un mes sin liquidación (base 0) no genera comisión aunque el saldo suba", () => {
+    const m = mes(meses, "2026-04");
+    expect(m.baseComision).toBe(0);
+    expect(m.comision).toBe(0);
+    expect(m.saldoFinal).toBe(16346.13);
+  });
+
+  it("resumen: expone la base y lo que falta para volver a ella", () => {
+    const r = resumen(meses, 100000, 2026, 130000);
+    expect(r.capitalBase).toBe(130000);
+    expect(r.saldoActual).toBe(16346.13);
+    expect(r.faltaParaBase).toBe(113653.87);
+  });
+
+  it("si el saldo supera la base, faltaParaBase es 0 (nunca negativo)", () => {
+    const arriba = construirCadena({
+      capitalInicial: 100000,
+      fechaIngreso: "2026-03-01",
+      rendimientos: [{ anio: 2026, mes: 3, modo: "saldo_final", valor: 140000, resultadoComisionable: 40000 }],
+      movimientos: [],
+      config: CFG,
+    });
+    const r = resumen(arriba, 100000, 2026, 130000);
+    expect(r.faltaParaBase).toBe(0);
+    expect(r.capitalBase).toBe(130000);
+  });
+
+  it("sin capitalBase el resumen no inventa nada", () => {
+    const r = resumen(meses, 100000, 2026);
+    expect(r.capitalBase).toBeNull();
+    expect(r.faltaParaBase).toBe(0);
+  });
+});
+
+/* ══ Guarda: capital base ⇒ la comisión NO se deriva del saldo ═════════════ */
+describe("capitalBase — un mes sin base cargada NO factura comisión", () => {
+  const CFG_BASE: LedgerConfig = {
+    comisionPct: 35,
+    usaHighWaterMark: false,
+    pierdeSoloCliente: true,
+    politica: "normal",
+    comisionInformativa: true,
+    capitalBase: 130000,
+  };
+
+  it("cuenta con capital base: sin resultadoComisionable la comisión es 0, no 35% del mes", () => {
+    // El escenario peligroso: el operador cierra el mes y deja el campo vacío.
+    // Antes esto devengaba 35% de TODO el resultado y le cobraba de más al cliente.
+    const meses = construirCadena({
+      capitalInicial: 16000,
+      fechaIngreso: "2026-09-01",
+      rendimientos: [{ anio: 2026, mes: 9, modo: "porcentaje", valor: 10 }],
+      movimientos: [],
+      config: CFG_BASE,
+    });
+    const m = mes(meses, "2026-09");
+    expect(m.rendBruto).toBe(1600);
+    expect(m.baseComision).toBe(0);
+    expect(m.comision).toBe(0);
+    expect(m.saldoFinal).toBe(17600); // el saldo no se toca
+  });
+
+  it("lo mismo en modo saldo_final (el camino del histórico importado)", () => {
+    const meses = construirCadena({
+      capitalInicial: 16000,
+      fechaIngreso: "2026-09-01",
+      rendimientos: [{ anio: 2026, mes: 9, modo: "saldo_final", valor: 20000 }],
+      movimientos: [],
+      config: CFG_BASE,
+    });
+    const m = mes(meses, "2026-09");
+    expect(m.rendNeto).toBe(4000);
+    expect(m.comision).toBe(0);
+    expect(m.saldoFinal).toBe(20000);
+  });
+
+  it("con la base cargada sí cobra, y solo sobre ella", () => {
+    const meses = construirCadena({
+      capitalInicial: 16000,
+      fechaIngreso: "2026-09-01",
+      rendimientos: [
+        { anio: 2026, mes: 9, modo: "porcentaje", valor: 10, resultadoComisionable: 1000 },
+      ],
+      movimientos: [],
+      config: CFG_BASE,
+    });
+    const m = mes(meses, "2026-09");
+    expect(m.baseComision).toBe(1000);
+    expect(m.comision).toBe(350);
+  });
+
+  it("SIN capital base el comportamiento anterior no cambia (comisiona el resultado)", () => {
+    const meses = construirCadena({
+      capitalInicial: 16000,
+      fechaIngreso: "2026-09-01",
+      rendimientos: [{ anio: 2026, mes: 9, modo: "porcentaje", valor: 10 }],
+      movimientos: [],
+      config: { ...CFG_BASE, capitalBase: undefined },
+    });
+    expect(mes(meses, "2026-09").comision).toBe(560); // 35% de 1,600
+  });
+});

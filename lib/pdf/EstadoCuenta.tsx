@@ -175,7 +175,7 @@ export function EstadoCuenta({
             <Text style={styles.summaryValue}>{money(resumen.saldoActual)}</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Ganancia neta</Text>
+            <Text style={styles.summaryLabel}>{comisionInformativa ? "Resultado" : "Ganancia neta"}</Text>
             <Text style={[styles.summaryValue, { color: resumen.gananciaNeta >= 0 ? POS : NEG }]}>
               {moneySigned(resumen.gananciaNeta)}
             </Text>

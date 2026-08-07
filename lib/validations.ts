@@ -42,6 +42,10 @@ export const crearClienteSchema = z.object({
       z.boolean().optional(),
     )
     .optional(),
+  /** Capital base pactado (high-water mark acordado). Vacío = sin base. */
+  capitalBase: numeroOpcionalDesdeForm
+    .refine((v) => v == null || v >= 0, "El capital base no puede ser negativo.")
+    .optional(),
   notas: z.string().max(1000).optional().nullable(),
 });
 

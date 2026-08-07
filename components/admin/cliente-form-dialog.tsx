@@ -27,6 +27,7 @@ export type ClienteEditable = {
   comisionPct: string | null;
   politicaComision: "normal" | "hwm_saldo" | "deficit_pnl" | null;
   comisionInformativa: boolean;
+  capitalBase: string | null;
   notas: string | null;
 };
 
@@ -56,6 +57,7 @@ export function ClienteFormDialog({
       comisionPct: String(fd.get("comisionPct") ?? ""),
       politicaComision: String(fd.get("politicaComision") ?? ""),
       comisionInformativa: fd.get("comisionInformativa") === "on",
+      capitalBase: String(fd.get("capitalBase") ?? ""),
       notas: String(fd.get("notas") ?? ""),
     };
     setErrs({});
@@ -181,6 +183,26 @@ export function ClienteFormDialog({
               </span>
             </span>
           </label>
+          <div className="space-y-1.5">
+            <Label htmlFor="capitalBase">Capital base pactado (opcional)</Label>
+            <Input
+              id="capitalBase"
+              name="capitalBase"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Vacío = la cuenta no trabaja con base"
+              defaultValue={cliente?.capitalBase ?? ""}
+            />
+            <p className="text-xs text-muted-foreground">
+              Nivel de saldo acordado con el cliente. Al fijarlo, la comisión de cada mes deja de
+              derivarse del resultado y pasa a cargarse a mano en el cierre (la ganancia que se
+              repartió); el portal muestra cuánto falta para volver a la base.
+            </p>
+            {errs.capitalBase?.map((e) => (
+              <p key={e} className="text-xs text-destructive">{e}</p>
+            ))}
+          </div>
           {editMode && (
             <div className="space-y-1.5">
               <Label htmlFor="estado">Estado</Label>

@@ -58,6 +58,10 @@ export const clientes = pgTable("clientes", {
    *  fuera (p. ej. Daniel Flores: el cliente retiraba y le pasaba el 35%).
    *  false (default) = el saldo importado ya viene neto (p. ej. Lenin). */
   comisionInformativa: boolean("comision_informativa").notNull().default(false),
+  /** Capital base pactado (high-water mark acordado con el cliente). Mientras
+   *  el saldo no lo supere no se cobra comisión. NULL = la cuenta no trabaja
+   *  con base pactada. Caso Daniel Flores: 130.000 desde el 13-abr-2026. */
+  capitalBase: numeric("capital_base", { precision: 14, scale: 2 }),
   notas: text("notas"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

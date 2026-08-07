@@ -88,6 +88,10 @@ export interface LedgerConfig {
    *  Aplica a los TRES modos: en una cuenta de saldos brutos el saldo nunca
    *  puede llevar la comisión descontada o se separaría del saldo real. */
   comisionInformativa?: boolean;
+  /** Capital base pactado con el cliente (high-water mark acordado). Solo
+   *  informativo para el motor: sirve para exponer cuánto falta para volver a
+   *  cobrar. El importe comisionable de cada mes se carga por separado. */
+  capitalBase?: number;
 }
 
 export interface LedgerInput {
@@ -156,10 +160,20 @@ function cmpYM(a: YM, b: YM): number {
 /* ── Construcción de la cadena mensual continua ──────────────────────────── */
 
 /** Base de comisión del mes: la propia si está cargada, si no el resultado.
- *  Trata null/undefined/"" como ausente, pero respeta un 0 explícito. */
-function baseComisionable(r: RendimientoInput, rendBruto: number): number {
+ *  Trata null/undefined/"" como ausente, pero respeta un 0 explícito.
+ *
+ *  `exigeExplicita` (cuentas con capital base pactado): el importe repartible
+ *  NO se puede derivar del saldo de cierre — dentro de un mes puede haber
+ *  varias liquidaciones y el saldo final no las contiene. Ahí, un mes sin dato
+ *  vale CERO en vez de comisionar el resultado entero: si el operador olvida
+ *  cargarlo, deja de cobrarse a sí mismo, nunca le cobra de más al cliente. */
+function baseComisionable(
+  r: RendimientoInput,
+  rendBruto: number,
+  exigeExplicita: boolean,
+): number {
   const v = r.resultadoComisionable;
-  if (v === null || v === undefined || v === "") return rendBruto;
+  if (v === null || v === undefined || v === "") return exigeExplicita ? 0 : rendBruto;
   return round2(num(v));
 }
 
@@ -167,6 +181,9 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
   const start = ymOf(input.fechaIngreso);
   const { comisionPct, pierdeSoloCliente } = input.config;
   const comisionInformativa = input.config.comisionInformativa === true;
+  // Con capital base pactado el importe repartible se carga mes a mes: no se
+  // puede inferir del saldo. Ver baseComisionable().
+  const exigeBaseExplicita = input.config.capitalBase != null;
 
   // Índice de rendimientos por mes (único por mes garantizado en BD).
   const rendByKey = new Map<string, RendimientoInput>();
@@ -246,7 +263,7 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
           // comisión se DEVENGA (informativa) y no toca el saldo. La base
           // puede ser menor que el resultado del mes si hay conceptos que son
           // 100% del cliente (recompensas del bróker, dividendos).
-          const baseCom = baseComisionable(r, rendBruto);
+          baseCom = baseComisionable(r, rendBruto, exigeBaseExplicita);
 
           if (politica === "deficit_pnl") {
             if (baseCom < 0) {
@@ -273,6 +290,7 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
           }
         } else {
           comision = 0;
+          baseCom = rendBruto;
           // En deficit_pnl el déficit sigue vivo aunque el mes venga "fijado":
           // así el histórico importado por saldo_final arrastra el déficit real.
           if (politica === "deficit_pnl") {
@@ -291,7 +309,9 @@ export function construirCadena(input: LedgerInput): MesLedger[] {
 
         // Con comisión informativa la base puede ser menor que el resultado
         // (recompensas del bróker y demás conceptos que son 100% del cliente).
-        const baseCom = comisionInformativa ? baseComisionable(r, rendBruto) : rendBruto;
+        baseCom = comisionInformativa
+          ? baseComisionable(r, rendBruto, exigeBaseExplicita)
+          : rendBruto;
 
         if (politica === "deficit_pnl") {
           // Las pérdidas alimentan el déficit; las ganancias primero lo
@@ -398,6 +418,11 @@ export interface ResumenLedger {
   roiAnioActual: number;
   ultimoMes: MesLedger | null;
   meses: number; // cantidad de meses en la serie
+  /** Capital base pactado, si la cuenta trabaja con uno. */
+  capitalBase: number | null;
+  /** Cuánto falta para que el saldo vuelva a la base (0 si ya está por encima).
+   *  Mientras sea > 0 el operador no cobra comisión. */
+  faltaParaBase: number;
 }
 
 /** Resumen agregado de una cadena ya construida. */
@@ -405,6 +430,7 @@ export function resumen(
   meses: MesLedger[],
   capitalInicial: number | string,
   anioReferencia?: number,
+  capitalBase?: number | null,
 ): ResumenLedger {
   const last = meses.length ? meses[meses.length - 1]! : null;
   const totalDepositos = round2(meses.reduce((s, m) => s + m.depositos, 0));
@@ -415,8 +441,10 @@ export function resumen(
   const cap = round2(num(capitalInicial));
   const anio = anioReferencia ?? last?.anio ?? new Date().getUTCFullYear();
 
+  const saldoActual = last?.saldoFinal ?? cap;
+  const base = capitalBase ?? null;
   return {
-    saldoActual: last?.saldoFinal ?? cap,
+    saldoActual,
     capitalInicial: cap,
     totalDepositos,
     totalRetiros,
@@ -428,6 +456,8 @@ export function resumen(
     roiAnioActual: roiAnual(meses, anio),
     ultimoMes: last,
     meses: meses.length,
+    capitalBase: base,
+    faltaParaBase: base != null ? Math.max(0, round2(base - saldoActual)) : 0,
   };
 }
 

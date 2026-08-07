@@ -1,0 +1,1 @@
+ALTER TABLE "clientes" ADD COLUMN "capital_base" numeric(14, 2);
