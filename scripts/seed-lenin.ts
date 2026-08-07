@@ -136,7 +136,7 @@ async function seed(): Promise<void> {
             capitalInicial: CLIENTE.capitalInicial,
             comisionPct: CLIENTE.comisionPct,
             politicaComision: CLIENTE.politicaComision,
-            estado: "activo",
+            estado: CLIENTE.estado,
             notas: CLIENTE.notas,
           })
           .returning();
@@ -151,6 +151,8 @@ async function seed(): Promise<void> {
             fechaIngreso: CLIENTE.fechaIngreso,
             comisionPct: CLIENTE.comisionPct,
             politicaComision: CLIENTE.politicaComision,
+            estado: CLIENTE.estado,
+            notas: CLIENTE.notas,
             updatedAt: new Date(),
           })
           .where(eq(clientes.id, cli.id));

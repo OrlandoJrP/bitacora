@@ -22,8 +22,9 @@ export const CLIENTE = {
   capitalInicial: "3000.00",
   comisionPct: "33.333",
   politicaComision: "deficit_pnl" as const,
+  estado: "inactivo" as const, // se retiró totalmente en ago-2026
   notas:
-    "Cuenta 66.66/33.33 con déficit PNL (el operador no cobra hasta recuperar pérdidas). Historial importado del Reporte Ejecutivo (nov-2024 → jul-2026).",
+    "Cuenta 66.66/33.33 con déficit PNL (el operador no cobra hasta recuperar pérdidas). Historial nov-2024 → ago-2026. CERRADA: retiro total de $2,900.00 el 07-ago-2026.",
 };
 
 export const MOVIMIENTOS = [
@@ -35,6 +36,7 @@ export const MOVIMIENTOS = [
   { tipo: "retiro", monto: "650.00", fecha: "2026-02-10", descripcion: "1era cuota de programación" },
   { tipo: "retiro", monto: "678.00", fecha: "2026-03-15", descripcion: "2da cuota de programación" },
   { tipo: "retiro", monto: "678.00", fecha: "2026-04-13", descripcion: "3era cuota academia de programación" },
+  { tipo: "retiro", monto: "2900.00", fecha: "2026-08-07", descripcion: "Retiro total — cierre de la cuenta" },
 ] as const;
 
 /** CAPITAL FINAL por mes (columna del Excel), importado como saldo_final. */
@@ -59,7 +61,7 @@ export const RENDIMIENTOS = [
   { anio: 2026, mes: 4, valor: "4126.99", descripcion: "Pérdida −13.98% + retiro academia" },
   { anio: 2026, mes: 5, valor: "3996.57", descripcion: "Pérdida −130.42" },
   { anio: 2026, mes: 6, valor: "4129.66", descripcion: "Recuperación +3.33% (recupera parte del déficit; quedan 778.23)" },
-  { anio: 2026, mes: 7, valor: "4129.66", descripcion: "Mes en curso (en proceso)" },
+  { anio: 2026, mes: 7, valor: "2900.00", descripcion: "Pérdida del mes (−1,229.66); último período operado" },
 ] as const;
 
 /** Verificación: saldo final por mes + déficit PNL esperado al cierre del mes. */
@@ -89,9 +91,10 @@ export const ESPERADO: ReadonlyArray<{
   { anio: 2026, mes: 4, saldoFinal: 4126.99, deficit: 780.9 },
   { anio: 2026, mes: 5, saldoFinal: 3996.57, deficit: 911.32 },
   { anio: 2026, mes: 6, saldoFinal: 4129.66, deficit: 778.23 },
-  { anio: 2026, mes: 7, saldoFinal: 4129.66, deficit: 778.23 },
+  { anio: 2026, mes: 7, saldoFinal: 2900.0, deficit: 2007.89 },
+  { anio: 2026, mes: 8, saldoFinal: 0, deficit: 2007.89 }, // retiro total; cuenta cerrada
 ];
 
-export const TOTAL_RETIRADO_ESPERADO = 3258.0; // "Total Retirado (Inversor)"
-export const SALDO_ACTUAL_ESPERADO = 4129.66; // "CAPITAL FINAL ACTUAL"
-export const DEFICIT_PENDIENTE_ESPERADO = 778.23;
+export const TOTAL_RETIRADO_ESPERADO = 6158.0; // 3,258 + retiro final 2,900
+export const SALDO_ACTUAL_ESPERADO = 0; // cuenta cerrada (ago-2026)
+export const DEFICIT_PENDIENTE_ESPERADO = 2007.89; // 778.23 + 1,229.66 (jul)
