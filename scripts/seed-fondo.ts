@@ -137,9 +137,19 @@ async function seed(): Promise<void> {
 
   try {
     await dbi.transaction(async (db) => {
-  // 1) Fondo (por nombre).
+  // 1) Fondo (por nombre). GUARDIA: si no aparece por nombre pero SÍ existen
+  // otros fondos (p. ej. fue renombrado en Admin), abortamos en vez de crear
+  // un duplicado con todo el historial.
   let [fondo] = await db.select().from(fondos).where(eq(fondos.nombre, FONDO.nombre)).limit(1);
   if (!fondo) {
+    const otros = await db.select({ nombre: fondos.nombre }).from(fondos);
+    if (otros.length > 0) {
+      throw new Error(
+        `No existe un fondo llamado "${FONDO.nombre}" pero hay ${otros.length} fondo(s): ` +
+          otros.map((o) => `"${o.nombre}"`).join(", ") +
+          `. Si lo renombraste en Admin, actualiza FONDO.nombre en scripts/data/fondo-historico.ts.`,
+      );
+    }
     [fondo] = await db
       .insert(fondos)
       .values({

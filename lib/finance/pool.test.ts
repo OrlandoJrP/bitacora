@@ -166,8 +166,8 @@ describe("abr-26 (Excel real): depósito de fin de mes con exposición parcial",
   });
 });
 
-/* ══ 4. Cadena 2026 completa: proporcional may/jun + flotante jul + TWR ════ */
-describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, jul flotante", () => {
+/* ══ 4. Cadena 2026 completa: proporcional may/jun, jul cerrado, ago flotante ══ */
+describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, jul −7.8, ago flotante", () => {
   const input: PoolInput = {
     fechaInicio: "2026-01-01",
     socios: [
@@ -193,6 +193,7 @@ describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, j
       { socioId: "A", tipo: "retiro", monto: 50, fecha: "2026-05-20" },
       { socioId: "A", tipo: "retiro", monto: 10, fecha: "2026-06-03" },
       { socioId: "A", tipo: "retiro", monto: 3000, fecha: "2026-06-16" },
+      { socioId: "A", tipo: "retiro", monto: 5000, fecha: "2026-08-01" },
     ],
     rendimientos: [
       { anio: 2026, mes: 1, modo: "saldo_final", valor: 65666.48 },
@@ -201,7 +202,8 @@ describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, j
       { anio: 2026, mes: 4, modo: "saldo_final", valor: 81348.91, tasaTwr: -13.98 },
       { anio: 2026, mes: 5, modo: "saldo_final", valor: 74556.83 },
       { anio: 2026, mes: 6, modo: "saldo_final", valor: 77199.02 },
-      { anio: 2026, mes: 7, modo: "porcentaje", valor: 6.6, enCurso: true },
+      { anio: 2026, mes: 7, modo: "porcentaje", valor: -7.8 },
+      { anio: 2026, mes: 8, modo: "porcentaje", valor: -5.54, enCurso: true },
     ],
     overrides: [
       { socioId: "L", anio: 2026, mes: 1, saldoFinal: 16176.16 },
@@ -232,25 +234,35 @@ describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, j
     expect(socio(m, "L").saldoFinal).toBe(15438.46);
     expect(socio(m, "A").saldoFinal).toBe(61760.56);
   });
-  it("jul-26 flotante +6.6%: fondo 82,294.16; Lenin 16,457.40; Arlet 65,836.76", () => {
+  it("jul-26 cerrado −7.8%: fondo 71,177.50; Lenin 14,234.26; Arlet 56,943.24", () => {
     const m = mes(meses, "2026-07");
+    expect(m.enCurso).toBe(false);
+    expect(m.resultado).toBe(-6021.52);
+    expect(m.saldoFinal).toBe(71177.5);
+    expect(socio(m, "L").saldoFinal).toBe(14234.26);
+    expect(socio(m, "A").saldoFinal).toBe(56943.24);
+  });
+  it("ago-26 flotante −5.54% tras retiro 5,000: fondo 62,511.27; Lenin 13,445.68; Arlet 49,065.59", () => {
+    const m = mes(meses, "2026-08");
     expect(m.enCurso).toBe(true);
-    expect(m.resultado).toBe(5095.14);
-    expect(m.saldoFinal).toBe(82294.16);
-    expect(socio(m, "L").saldoFinal).toBe(16457.4);
-    expect(socio(m, "A").saldoFinal).toBe(65836.76);
+    expect(m.retiros).toBe(5000);
+    expect(m.baseOperativa).toBe(66177.5);
+    expect(m.resultado).toBe(-3666.23);
+    expect(m.saldoFinal).toBe(62511.27);
+    expect(socio(m, "L").saldoFinal).toBe(13445.68);
+    expect(socio(m, "A").saldoFinal).toBe(49065.59);
   });
-  it("TWR 2026 compone a +7.93% (con tasa_twr de abril) — el número del Excel", () => {
+  it("TWR 2026 compone a −11.82% (con tasa_twr de abril y el flotante de agosto)", () => {
     const r = resumenPool(meses, input);
-    expect(round2(r.twrAnual * 100)).toBe(7.93);
-    expect(round2(r.twrDesdeInicio * 100)).toBe(7.93); // esta serie empieza en 2026
+    expect(round2(r.twrAnual * 100)).toBe(-11.82);
+    expect(round2(r.twrDesdeInicio * 100)).toBe(-11.82); // esta serie empieza en 2026
   });
-  it("resumen: capital actual 82,294.16 (flotante) vs confirmado 77,199.02", () => {
+  it("resumen: capital actual 62,511.27 (flotante) vs confirmado 71,177.50", () => {
     const r = resumenPool(meses, input);
-    expect(r.capitalActual).toBe(82294.16);
-    expect(r.capitalConfirmado).toBe(77199.02);
+    expect(r.capitalActual).toBe(62511.27);
+    expect(r.capitalConfirmado).toBe(71177.5);
     expect(r.flotante).not.toBeNull();
-    expect(round2((r.flotante?.roiMes ?? 0) * 100)).toBe(6.6);
+    expect(round2((r.flotante?.roiMes ?? 0) * 100)).toBe(-5.54);
   });
   it("invariantes I1/I2/I3 en toda la cadena", () => {
     for (let i = 0; i < meses.length; i++) {
