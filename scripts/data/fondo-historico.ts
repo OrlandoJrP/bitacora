@@ -10,9 +10,11 @@
  *   socio ve como suyo; el RESUMEN del Excel también suma posiciones).
  * - abr-2026 lleva tasa_twr = −13.98 (exposición parcial del depósito del
  *   29-abr, nota E8/F21): la tasa TWR reportada difiere de resultado/base.
- * - jul-2026 cerró definitivo en −7,8% sobre el capital (antes iba flotante
- *   +6,6 al corte 09/07). ago-2026 va como porcentaje −5,54 con en_curso =
- *   true (flotante al 07/08/2026), tras el retiro de Arlet de 5.000.
+ * - jul-2026 cerró definitivo en −7,8% (antes iba flotante +6,6 al corte
+ *   09/07) con el retiro de Arlet de 5.000 el 15-jul DENTRO del mes: el %
+ *   aplica sobre la base post-retiro (72.199,02), igual que el cuadro del
+ *   Excel maneja los retiros de may/jun-26. ago-2026 va como porcentaje
+ *   −5,54 con en_curso = true (flotante al 07/08/2026).
  * - Reparto: overrides por socio sep-24→abr-26 (% negociados históricos);
  *   may-26 y jun-26 proporcional puro (nota K22) — verificado que reproduce
  *   el cuadro al centavo.
@@ -30,7 +32,7 @@ export const FONDO = {
   comisionPct: "35.000",
   baseComision: "ganancia_neta" as const,
   notas:
-    "Importado del Excel REPORTE_FONDO_JUL2026 (corte 09/07/2026). Actualizado 07/08/2026: julio cerró −7,8%, retiro Arlet 5.000 y agosto flotante −5,54%.",
+    "Importado del Excel REPORTE_FONDO_JUL2026 (corte 09/07/2026). Actualizado 07/08/2026: julio cerró −7,8% con retiro Arlet 5.000 (15-jul); agosto flotante −5,54%.",
 };
 
 export const SOCIOS = [
@@ -75,8 +77,8 @@ export const MOVIMIENTOS: MovHistorico[] = [
   { socio: "ARLET", tipo: "retiro", monto: "50.00", fecha: "2026-05-20", descripcion: "Bolígrafo" },
   { socio: "ARLET", tipo: "retiro", monto: "10.00", fecha: "2026-06-03", descripcion: "Dinero personal" },
   { socio: "ARLET", tipo: "retiro", monto: "3000.00", fecha: "2026-06-16", descripcion: "A Binance Naudy" },
-  // Retiro posterior al cierre negativo de julio (sale de la base de agosto).
-  { socio: "ARLET", tipo: "retiro", monto: "5000.00", fecha: "2026-08-01", descripcion: "Maquina retroexcavadora de china" },
+  // 15-jul: dentro del mes ⇒ reduce la base operativa de julio.
+  { socio: "ARLET", tipo: "retiro", monto: "5000.00", fecha: "2026-07-15", descripcion: "Maquina retroexcavadora de china" },
 ];
 
 export interface RendHistorico {
@@ -116,8 +118,8 @@ export const RENDIMIENTOS: RendHistorico[] = [
   },
   { anio: 2026, mes: 5, modo: "saldo_final", valor: "74556.83", descripcion: "Pérdida -3,12% / retiros Arlet 4.391" },
   { anio: 2026, mes: 6, modo: "saldo_final", valor: "77199.02", descripcion: "Ganancia +7,9% / retiros Arlet 3.010" },
-  { anio: 2026, mes: 7, modo: "porcentaje", valor: "-7.8", descripcion: "Pérdida -7,8% (cierre definitivo; al 09/07 iba +6,6 flotante)" },
-  { anio: 2026, mes: 8, modo: "porcentaje", valor: "-5.54", enCurso: true, descripcion: "Mes en curso al 07/08/2026: resultado flotante / retiro Arlet 5.000" },
+  { anio: 2026, mes: 7, modo: "porcentaje", valor: "-7.8", descripcion: "Pérdida -7,8% / retiro Arlet 5.000 (al 09/07 iba +6,6 flotante)" },
+  { anio: 2026, mes: 8, modo: "porcentaje", valor: "-5.54", enCurso: true, descripcion: "Mes en curso al 07/08/2026: resultado flotante" },
 ];
 
 export interface OverrideHistorico {
@@ -212,8 +214,8 @@ export const ESPERADO: EsperadoMes[] = [
   { anio: 2026, mes: 4, fondo: 81348.91, LENIN: 14768.91, ARLET: 66580.0, RAILEN: 0 },
   { anio: 2026, mes: 5, fondo: 74556.83, LENIN: 14308.12, ARLET: 60248.71, RAILEN: 0 },
   { anio: 2026, mes: 6, fondo: 77199.02, LENIN: 15438.46, ARLET: 61760.56, RAILEN: 0 },
-  { anio: 2026, mes: 7, fondo: 71177.5, LENIN: 14234.26, ARLET: 56943.24, RAILEN: 0 },
-  { anio: 2026, mes: 8, fondo: 62511.27, LENIN: 13445.68, ARLET: 49065.59, RAILEN: 0 },
+  { anio: 2026, mes: 7, fondo: 66567.5, LENIN: 14234.26, ARLET: 52333.24, RAILEN: 0 },
+  { anio: 2026, mes: 8, fondo: 62879.66, LENIN: 13445.68, ARLET: 49433.98, RAILEN: 0 },
 ];
 
 /** TWR desde el inicio esperado, en %, con el flotante de agosto. */

@@ -193,7 +193,7 @@ describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, j
       { socioId: "A", tipo: "retiro", monto: 50, fecha: "2026-05-20" },
       { socioId: "A", tipo: "retiro", monto: 10, fecha: "2026-06-03" },
       { socioId: "A", tipo: "retiro", monto: 3000, fecha: "2026-06-16" },
-      { socioId: "A", tipo: "retiro", monto: 5000, fecha: "2026-08-01" },
+      { socioId: "A", tipo: "retiro", monto: 5000, fecha: "2026-07-15" },
     ],
     rendimientos: [
       { anio: 2026, mes: 1, modo: "saldo_final", valor: 65666.48 },
@@ -234,33 +234,35 @@ describe("2026 completo (Excel real): overrides ene-abr, proporcional may-jun, j
     expect(socio(m, "L").saldoFinal).toBe(15438.46);
     expect(socio(m, "A").saldoFinal).toBe(61760.56);
   });
-  it("jul-26 cerrado −7.8%: fondo 71,177.50; Lenin 14,234.26; Arlet 56,943.24", () => {
+  it("jul-26 cerrado −7.8% con retiro 5,000 (15-jul): fondo 66,567.50; Lenin 14,234.26; Arlet 52,333.24", () => {
     const m = mes(meses, "2026-07");
     expect(m.enCurso).toBe(false);
-    expect(m.resultado).toBe(-6021.52);
-    expect(m.saldoFinal).toBe(71177.5);
+    expect(m.retiros).toBe(5000);
+    expect(m.baseOperativa).toBe(72199.02);
+    expect(m.resultado).toBe(-5631.52);
+    expect(m.saldoFinal).toBe(66567.5);
     expect(socio(m, "L").saldoFinal).toBe(14234.26);
-    expect(socio(m, "A").saldoFinal).toBe(56943.24);
+    expect(socio(m, "A").saldoFinal).toBe(52333.24);
   });
-  it("ago-26 flotante −5.54% tras retiro 5,000: fondo 62,511.27; Lenin 13,445.68; Arlet 49,065.59", () => {
+  it("ago-26 flotante −5.54%: fondo 62,879.66; Lenin 13,445.68; Arlet 49,433.98", () => {
     const m = mes(meses, "2026-08");
     expect(m.enCurso).toBe(true);
-    expect(m.retiros).toBe(5000);
-    expect(m.baseOperativa).toBe(66177.5);
-    expect(m.resultado).toBe(-3666.23);
-    expect(m.saldoFinal).toBe(62511.27);
+    expect(m.retiros).toBe(0);
+    expect(m.baseOperativa).toBe(66567.5);
+    expect(m.resultado).toBe(-3687.84);
+    expect(m.saldoFinal).toBe(62879.66);
     expect(socio(m, "L").saldoFinal).toBe(13445.68);
-    expect(socio(m, "A").saldoFinal).toBe(49065.59);
+    expect(socio(m, "A").saldoFinal).toBe(49433.98);
   });
   it("TWR 2026 compone a −11.82% (con tasa_twr de abril y el flotante de agosto)", () => {
     const r = resumenPool(meses, input);
     expect(round2(r.twrAnual * 100)).toBe(-11.82);
     expect(round2(r.twrDesdeInicio * 100)).toBe(-11.82); // esta serie empieza en 2026
   });
-  it("resumen: capital actual 62,511.27 (flotante) vs confirmado 71,177.50", () => {
+  it("resumen: capital actual 62,879.66 (flotante) vs confirmado 66,567.50", () => {
     const r = resumenPool(meses, input);
-    expect(r.capitalActual).toBe(62511.27);
-    expect(r.capitalConfirmado).toBe(71177.5);
+    expect(r.capitalActual).toBe(62879.66);
+    expect(r.capitalConfirmado).toBe(66567.5);
     expect(r.flotante).not.toBeNull();
     expect(round2((r.flotante?.roiMes ?? 0) * 100)).toBe(-5.54);
   });
