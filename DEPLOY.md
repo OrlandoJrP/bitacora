@@ -100,6 +100,18 @@ El `Dockerfile` produce una imagen **standalone** para el servicio web.
 
 - **Migraciones nuevas:** `pnpm db:generate` en local (genera SQL en `drizzle/migrations`),
   commitea, y el job PRE_DEPLOY las aplica en el siguiente deploy.
+
+- **⚠ BORRAR UNA COLUMNA VA EN DOS DEPLOYS.** El job PRE_DEPLOY corre mientras los
+  contenedores VIEJOS siguen atendiendo tráfico. Un `ADD COLUMN` no molesta a nadie,
+  pero un `DROP COLUMN` deja al código viejo consultando algo que ya no existe y la
+  app devuelve 500 hasta que entra el deploy nuevo (Drizzle enumera las columnas en
+  cada `select()`, así que revienta toda página que lea esa tabla). El orden correcto:
+    1. Deploy A: código que YA NO usa la columna (la columna sigue en la base).
+    2. Verificar que el deploy A está arriba.
+    3. Deploy B (o un script one-off): recién ahí el `DROP COLUMN`.
+  Pasó el 08-ago-2026 con `clientes.comision_informativa`; se recuperó con
+  `scripts/recuperar-comision-informativa.ts`. Lo mismo aplica a renombrar columnas
+  y a estrechar tipos.
 - **Backups:** activa los backups automáticos de la Managed Postgres en su panel.
 - **RLS:** las políticas se re-aplican (idempotentes) en cada `pnpm db:migrate`.
 - **Logs:** App Platform → Runtime Logs. Las contraseñas nunca se registran.
