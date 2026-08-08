@@ -34,7 +34,8 @@ export const CLIENTE = {
   capitalInicial: "989.67", // primer depósito (01-sep-2025)
   comisionPct: "35.000",
   politicaComision: "normal" as const,
-  comisionInformativa: true,
+  /** El cliente pagaba el 35% por fuera: los saldos del bróker son BRUTOS. */
+  tratamientoComision: "pagada_aparte" as const,
   /** Capital base pactado vigente. No se cobra comisión hasta superarlo. */
   capitalBase: "130000.00",
   estado: "activo" as const,

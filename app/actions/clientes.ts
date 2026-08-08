@@ -53,7 +53,7 @@ export async function crearCliente(
         capitalInicial: d.capitalInicial.toFixed(2),
         comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
         politicaComision: d.politicaComision ?? null,
-        comisionInformativa: d.comisionInformativa === true,
+        tratamientoComision: d.tratamientoComision ?? "descontada",
         capitalBase: d.capitalBase != null ? d.capitalBase.toFixed(2) : null,
         notas: d.notas ?? null,
       })
@@ -83,7 +83,7 @@ export async function crearCliente(
       capitalInicial: d.capitalInicial,
       comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
       politicaComision: d.politicaComision ?? null,
-      comisionInformativa: d.comisionInformativa === true,
+      tratamientoComision: d.tratamientoComision ?? "descontada",
       capitalBase: d.capitalBase != null ? d.capitalBase.toFixed(2) : null,
     },
   });
@@ -114,8 +114,8 @@ export async function editarCliente(input: unknown): Promise<ActionResult> {
         comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
         politicaComision: d.politicaComision ?? null,
         // Si el payload no trae el campo, se conserva: un llamador que no lo
-        // envíe no puede apagar en silencio una condición del acuerdo.
-        comisionInformativa: d.comisionInformativa ?? actual.comisionInformativa,
+        // envíe no puede cambiar en silencio una condición del acuerdo.
+        tratamientoComision: d.tratamientoComision ?? actual.tratamientoComision,
         capitalBase:
           d.capitalBase !== undefined
             ? d.capitalBase != null
@@ -146,7 +146,7 @@ export async function editarCliente(input: unknown): Promise<ActionResult> {
       estado: d.estado,
       comisionPct: d.comisionPct != null ? d.comisionPct.toFixed(3) : null,
       politicaComision: d.politicaComision ?? null,
-      comisionInformativa: d.comisionInformativa === true,
+      tratamientoComision: d.tratamientoComision ?? "descontada",
       capitalBase: d.capitalBase != null ? d.capitalBase.toFixed(2) : null,
     },
   });

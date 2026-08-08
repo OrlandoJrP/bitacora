@@ -46,7 +46,7 @@ function construir(
     ...cfg,
     comisionPct: cliente.comisionPct != null ? num(cliente.comisionPct) : cfg.comisionPct,
     politica: cliente.politicaComision ?? cfg.politica,
-    comisionInformativa: cliente.comisionInformativa,
+    tratamientoComision: cliente.tratamientoComision,
     capitalBase: cliente.capitalBase != null ? num(cliente.capitalBase) : undefined,
   };
   const meses = construirCadena({

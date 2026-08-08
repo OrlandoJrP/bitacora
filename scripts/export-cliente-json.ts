@@ -46,7 +46,7 @@ async function main() {
       pierdeSoloCliente: cfg!.pierdeSoloCliente,
       politica:
         cli.politicaComision ?? (cfg!.usaHighWaterMark ? "hwm_saldo" : "normal"),
-      comisionInformativa: cli.comisionInformativa,
+      tratamientoComision: cli.tratamientoComision,
       capitalBase: cli.capitalBase != null ? num(cli.capitalBase) : undefined,
     };
 

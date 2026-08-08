@@ -64,9 +64,13 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
   const id = ledger.cliente.id;
   const chart = ledger.meses.map((m) => ({ label: etiquetaMesCorta(m.anio, m.mes), saldo: m.saldoFinal }));
   const meses = [...ledger.meses].reverse();
-  // En cuentas con comisión informativa el saldo es BRUTO: la comisión ya se
-  // liquidó fuera de la cuenta, así que "neto" no es bruto − comisión.
-  const informativa = ledger.config.comisionInformativa === true;
+  const trato = ledger.config.tratamientoComision ?? "descontada";
+  // Cuando la comisión no se descuenta, rendNeto === rendBruto: mostrar las dos
+  // columnas invitaría a restarla otra vez.
+  const informativa = trato !== "descontada";
+  // ...pero "ya retirada" y "pagada aparte" significan lo contrario entre sí:
+  // en la primera el saldo YA viene neto; en la segunda es bruto.
+  const saldoBruto = trato === "pagada_aparte";
 
   return (
     <div className="space-y-6">
@@ -92,11 +96,11 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
         <StatCard label="Saldo actual" value={<MoneyText value={r.saldoActual} />} />
         <StatCard label="ROI acumulado" value={<PctText fraction={r.roiAcumulado} />} />
         <StatCard
-          label={informativa ? "Resultado generado" : "Ganancia neta"}
+          label={saldoBruto ? "Resultado generado" : "Ganancia neta"}
           value={<span className={r.gananciaNeta >= 0 ? "text-pos" : "text-neg"}>{formatUSDSigned(r.gananciaNeta)}</span>}
         />
         <StatCard
-          label={informativa ? "Comisión (cobrada aparte)" : "Comisión generada"}
+          label={trato === "pagada_aparte" ? "Comisión (pagada aparte)" : trato === "ya_retirada" ? "Comisión (ya retirada)" : "Comisión generada"}
           value={<MoneyText value={r.comisionOperador} />}
           accent
         />
@@ -142,9 +146,11 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
         <CardHeader>
           <CardTitle className="text-base">Detalle mensual</CardTitle>
           <CardDescription>
-            {informativa
-              ? "Vista del operador. Los saldos son los de la cuenta real (brutos): la comisión se liquidó fuera, por eso no se resta aquí."
-              : "Vista del operador (incluye bruto y comisión)."}
+            {trato === "pagada_aparte"
+              ? "Vista del operador. Los saldos son los de la cuenta real (brutos): el cliente pagó la comisión por fuera, por eso no se resta aquí."
+              : trato === "ya_retirada"
+                ? "Vista del operador. Los saldos ya vienen netos: el operador retiró su comisión de la cuenta, por eso no se vuelve a restar."
+                : "Vista del operador (incluye bruto y comisión)."}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -156,7 +162,7 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
                 <TableHead className="text-right">Resultado</TableHead>
                 {informativa && <TableHead className="text-right">Base comisión</TableHead>}
                 <TableHead className="text-right">
-                  {informativa ? "Comisión (aparte)" : "Comisión"}
+                  {trato === "pagada_aparte" ? "Comisión (aparte)" : trato === "ya_retirada" ? "Comisión (ya retirada)" : "Comisión"}
                 </TableHead>
                 {!informativa && <TableHead className="text-right">Neto</TableHead>}
                 <TableHead className="text-right">ROI</TableHead>
@@ -199,7 +205,7 @@ function ReporteCliente({ ledger }: { ledger: Awaited<ReturnType<typeof cargarLe
               <TableRow>
                 <TableHead>Año</TableHead>
                 <TableHead className="text-right">Aporte neto</TableHead>
-                <TableHead className="text-right">{informativa ? "Resultado" : "Resultado neto"}</TableHead>
+                <TableHead className="text-right">{saldoBruto ? "Resultado" : "Resultado neto"}</TableHead>
                 <TableHead className="text-right">Comisión</TableHead>
                 <TableHead className="text-right">ROI anual</TableHead>
                 <TableHead className="text-right">Saldo cierre</TableHead>
@@ -235,7 +241,7 @@ function ReporteConsolidado({
   const { anio } = mesActual();
   // Si alguna cuenta lleva comisión informativa, el total mezcla saldos brutos
   // con netos: no se puede rotular "neto" sin faltar a la verdad.
-  const hayInformativa = ledgers.some((l) => l.config.comisionInformativa === true);
+  const hayInformativa = ledgers.some((l) => (l.config.tratamientoComision ?? "descontada") === "pagada_aparte");
 
   const aum = ledgers
     .filter((l) => l.cliente.estado === "activo")

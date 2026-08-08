@@ -15,6 +15,7 @@ import { clientes, movimientos, rendimientosMensuales } from "../drizzle/schema"
 import { construirCadena, round2, type LedgerInput } from "../lib/finance/ledger";
 import {
   CLIENTE,
+  COMISION_OPERADOR_ESPERADA,
   DEFICIT_PENDIENTE_ESPERADO,
   ESPERADO,
   MOVIMIENTOS,
@@ -34,6 +35,7 @@ function inputDesdeConstantes(): LedgerInput {
       mes: r.mes,
       modo: "saldo_final" as const,
       valor: r.valor,
+      resultadoComisionable: r.resultadoComisionable,
       descripcion: r.descripcion,
     })),
     movimientos: MOVIMIENTOS.map((m) => ({
@@ -47,6 +49,7 @@ function inputDesdeConstantes(): LedgerInput {
       usaHighWaterMark: false,
       pierdeSoloCliente: true,
       politica: CLIENTE.politicaComision,
+      tratamientoComision: CLIENTE.tratamientoComision,
     },
   };
 }
@@ -71,6 +74,9 @@ function verificar(input: LedgerInput, etiqueta: string): boolean {
     if (e.deficit !== undefined && m.deficitAcum !== e.deficit) {
       problemas.push(`déficit ${m.deficitAcum} ≠ ${e.deficit}`);
     }
+    if (m.comision !== e.comision) {
+      problemas.push(`comisión ${m.comision} ≠ ${e.comision}`);
+    }
     if (problemas.length) {
       console.error(`  ✗ ${String(e.mes).padStart(2, "0")}/${e.anio}: ${problemas.join(" | ")}`);
       fallos++;
@@ -91,10 +97,19 @@ function verificar(input: LedgerInput, etiqueta: string): boolean {
     console.error(`  ✗ Déficit pendiente: ${ultimo.deficitAcum} ≠ ${DEFICIT_PENDIENTE_ESPERADO}`);
     fallos++;
   }
+  const comisionTotal = round2(meses.reduce((s, m) => s + m.comision, 0));
+  if (comisionTotal !== COMISION_OPERADOR_ESPERADA) {
+    console.error(`  ✗ Comisión del operador: ${comisionTotal} ≠ ${COMISION_OPERADOR_ESPERADA}`);
+    fallos++;
+  }
+  // El saldo NO puede moverse por activar la comisión informativa: los saldos
+  // importados ya vienen netos de lo que el operador retiró.
+  if (ultimo.saldoFinal !== SALDO_ACTUAL_ESPERADO) fallos++;
 
   if (fallos === 0) {
     console.log(
-      `  ✓ ${ESPERADO.length} meses al centavo · saldo ${ultimo.saldoFinal.toFixed(2)} · retirado ${totalRetiros.toFixed(2)} · déficit pendiente ${ultimo.deficitAcum.toFixed(2)}`,
+      `  ✓ ${ESPERADO.length} meses al centavo · saldo ${ultimo.saldoFinal.toFixed(2)} · retirado ${totalRetiros.toFixed(2)} · ` +
+        `comisión del operador ${comisionTotal.toFixed(2)} · déficit pendiente ${ultimo.deficitAcum.toFixed(2)}`,
     );
   }
   return fallos === 0;
@@ -136,6 +151,7 @@ async function seed(): Promise<void> {
             capitalInicial: CLIENTE.capitalInicial,
             comisionPct: CLIENTE.comisionPct,
             politicaComision: CLIENTE.politicaComision,
+            tratamientoComision: CLIENTE.tratamientoComision,
             estado: CLIENTE.estado,
             notas: CLIENTE.notas,
           })
@@ -151,6 +167,7 @@ async function seed(): Promise<void> {
             fechaIngreso: CLIENTE.fechaIngreso,
             comisionPct: CLIENTE.comisionPct,
             politicaComision: CLIENTE.politicaComision,
+            tratamientoComision: CLIENTE.tratamientoComision,
             estado: CLIENTE.estado,
             notas: CLIENTE.notas,
             updatedAt: new Date(),
@@ -193,6 +210,7 @@ async function seed(): Promise<void> {
             mes: r.mes,
             modo: "saldo_final",
             valor: Number(r.valor).toFixed(4),
+            resultadoComisionable: Number(r.resultadoComisionable).toFixed(2),
             descripcion: r.descripcion ?? null,
           })
           .onConflictDoUpdate({
@@ -204,6 +222,7 @@ async function seed(): Promise<void> {
             set: {
               modo: "saldo_final",
               valor: Number(r.valor).toFixed(4),
+              resultadoComisionable: Number(r.resultadoComisionable).toFixed(2),
               descripcion: r.descripcion ?? null,
               updatedAt: new Date(),
             },
@@ -236,6 +255,7 @@ async function seed(): Promise<void> {
           mes: r.mes,
           modo: r.modo,
           valor: r.valor,
+          resultadoComisionable: r.resultadoComisionable,
           descripcion: r.descripcion,
         })),
         movimientos: movsDb.map((m) => ({
@@ -249,6 +269,7 @@ async function seed(): Promise<void> {
           usaHighWaterMark: false,
           pierdeSoloCliente: true,
           politica: cliDb!.politicaComision ?? CLIENTE.politicaComision,
+          tratamientoComision: cliDb!.tratamientoComision,
         },
       };
 

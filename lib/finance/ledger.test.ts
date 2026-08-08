@@ -583,7 +583,7 @@ describe("comisionInformativa — la comisión se devenga pero NO toca el saldo"
     usaHighWaterMark: false,
     pierdeSoloCliente: true,
     politica: "deficit_pnl",
-    comisionInformativa: true,
+    tratamientoComision: "pagada_aparte",
   };
 
   it("saldo_final: el saldo cargado manda y la comisión sale aparte", () => {
@@ -710,7 +710,7 @@ describe("capitalBase — cuánto falta para volver a cobrar", () => {
     usaHighWaterMark: false,
     pierdeSoloCliente: true,
     politica: "normal",
-    comisionInformativa: true,
+    tratamientoComision: "pagada_aparte",
     capitalBase: 130000,
   };
   const meses = construirCadena({
@@ -775,7 +775,7 @@ describe("capitalBase — un mes sin base cargada NO factura comisión", () => {
     usaHighWaterMark: false,
     pierdeSoloCliente: true,
     politica: "normal",
-    comisionInformativa: true,
+    tratamientoComision: "pagada_aparte",
     capitalBase: 130000,
   };
 

@@ -402,7 +402,7 @@ function FilaCierre({
           />
         </div>
 
-        {cliente.config.comisionInformativa && (
+        {(cliente.config.tratamientoComision ?? "descontada") !== "descontada" && (
           <div className="lg:col-span-3">
             <label
               htmlFor={`comisionable-${cliente.id}`}
@@ -441,7 +441,7 @@ function FilaCierre({
           <Preview
             p={preview}
             comisionPct={comisionPct}
-            informativa={cliente.config.comisionInformativa === true}
+            informativa={(cliente.config.tratamientoComision ?? "descontada") !== "descontada"}
           />
           <Button variant="gold" size="sm" onClick={guardar} disabled={pending}>
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

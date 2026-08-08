@@ -44,9 +44,8 @@ export interface EstadoCuentaProps {
     roiAcumulado: number;
     aporteNeto: number;
   };
-  /** true = el saldo de la cuenta es BRUTO y la comisión del operador se
-   *  liquidó por fuera; el texto legal del pie tiene que decirlo. */
-  comisionInformativa?: boolean;
+  /** Dónde está la comisión respecto del saldo: cambia el texto legal del pie. */
+  tratamientoComision?: "descontada" | "ya_retirada" | "pagada_aparte";
 }
 
 const styles = StyleSheet.create({
@@ -137,7 +136,7 @@ export function EstadoCuenta({
   generadoEl,
   meses,
   resumen,
-  comisionInformativa = false,
+  tratamientoComision = "descontada",
 }: EstadoCuentaProps) {
   return (
     <Document title={`Estado de cuenta · ${cliente.nombre}`} author={fondoNombre}>
@@ -175,7 +174,7 @@ export function EstadoCuenta({
             <Text style={styles.summaryValue}>{money(resumen.saldoActual)}</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>{comisionInformativa ? "Resultado" : "Ganancia neta"}</Text>
+            <Text style={styles.summaryLabel}>{tratamientoComision === "pagada_aparte" ? "Resultado" : "Ganancia neta"}</Text>
             <Text style={[styles.summaryValue, { color: resumen.gananciaNeta >= 0 ? POS : NEG }]}>
               {moneySigned(resumen.gananciaNeta)}
             </Text>
@@ -218,9 +217,11 @@ export function EstadoCuenta({
 
         <Text style={styles.disclaimer}>
           Este documento es un estado de cuenta informativo emitido por {fondoNombre}.{" "}
-          {comisionInformativa
+          {tratamientoComision === "pagada_aparte"
             ? "Los montos mostrados son el resultado de la cuenta y los saldos son los de la cuenta real; la comisión del operador se liquida por separado y no está descontada aquí."
-            : "Los montos mostrados son el resultado neto del inversionista."}{" "}
+            : tratamientoComision === "ya_retirada"
+              ? "Los montos mostrados son el resultado neto del inversionista: la comisión del operador ya está descontada de los saldos."
+              : "Los montos mostrados son el resultado neto del inversionista."}{" "}
           Rendimientos pasados no garantizan resultados futuros. Para cualquier aclaración, contacte
           a su asesor.
         </Text>

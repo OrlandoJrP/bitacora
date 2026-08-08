@@ -72,6 +72,16 @@ export interface MovimientoInput {
  *    cálculo: el déficit vive en resultados, no en el nivel del saldo.) */
 export type PoliticaComision = "normal" | "hwm_saldo" | "deficit_pnl";
 
+/** Dónde está la comisión del operador respecto del saldo del cliente.
+ *  - "descontada"    : el motor la resta del saldo. Es el caso normal.
+ *  - "ya_retirada"   : el operador ya la sacó de la cuenta; el saldo cargado
+ *                      viene NETO y no puede volver a restarse (Lenin).
+ *  - "pagada_aparte" : el cliente la pagó por fuera; el saldo es BRUTO y
+ *                      tampoco puede restarse (Daniel).
+ *  Las dos últimas se calculan igual, pero significan lo CONTRARIO para el
+ *  cliente: en una ya cobró y en la otra no. Los textos deben distinguirlas. */
+export type TratamientoComision = "descontada" | "ya_retirada" | "pagada_aparte";
+
 export interface LedgerConfig {
   /** Comisión del operador en % (p. ej. 35 = 35%). */
   comisionPct: number;
@@ -81,13 +91,11 @@ export interface LedgerConfig {
   pierdeSoloCliente: boolean;
   /** Si se omite, se deriva: usaHighWaterMark ? "hwm_saldo" : "normal". */
   politica?: PoliticaComision;
-  /** true = la comisión se DEVENGA pero no se descuenta del saldo (informativa).
-   *  Se usa cuando los saldos cargados son BRUTOS y el operador ya cobró por
-   *  fuera de la cuenta (caso Daniel Flores: el cliente retiraba y le pasaba el
-   *  35%). Con false (default) la comisión reduce el saldo, como siempre.
-   *  Aplica a los TRES modos: en una cuenta de saldos brutos el saldo nunca
-   *  puede llevar la comisión descontada o se separaría del saldo real. */
-  comisionInformativa?: boolean;
+  /** Dónde está la comisión respecto del saldo. Si se omite, "descontada".
+   *  Con "ya_retirada" o "pagada_aparte" la comisión se DEVENGA pero no toca el
+   *  saldo, en los TRES modos: si se restara, el saldo del portal se separaría
+   *  del real. */
+  tratamientoComision?: TratamientoComision;
   /** Capital base pactado con el cliente (high-water mark acordado). Solo
    *  informativo para el motor: sirve para exponer cuánto falta para volver a
    *  cobrar. El importe comisionable de cada mes se carga por separado. */
@@ -180,7 +188,10 @@ function baseComisionable(
 export function construirCadena(input: LedgerInput): MesLedger[] {
   const start = ymOf(input.fechaIngreso);
   const { comisionPct, pierdeSoloCliente } = input.config;
-  const comisionInformativa = input.config.comisionInformativa === true;
+  // "ya_retirada" y "pagada_aparte" comparten el cálculo: la comisión se
+  // devenga sin tocar el saldo. Solo difieren en lo que se le dice al cliente.
+  const comisionInformativa =
+    (input.config.tratamientoComision ?? "descontada") !== "descontada";
   // Con capital base pactado el importe repartible se carga mes a mes: no se
   // puede inferir del saldo. Ver baseComisionable().
   const exigeBaseExplicita = input.config.capitalBase != null;

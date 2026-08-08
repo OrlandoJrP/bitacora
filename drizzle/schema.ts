@@ -31,6 +31,17 @@ export const politicaComisionEnum = pgEnum("politica_comision", [
   "hwm_saldo",
   "deficit_pnl",
 ]);
+/** Dónde está la comisión del operador respecto del saldo del cliente:
+ *  - "descontada"    : el motor la resta del saldo (caso normal).
+ *  - "ya_retirada"   : el operador ya la sacó de la cuenta, el saldo viene NETO.
+ *  - "pagada_aparte" : el cliente la pagó fuera, el saldo es BRUTO.
+ *  Las dos últimas no tocan el saldo, pero significan cosas opuestas para el
+ *  cliente, así que no se pueden mostrar con el mismo texto. */
+export const tratamientoComisionEnum = pgEnum("tratamiento_comision", [
+  "descontada",
+  "ya_retirada",
+  "pagada_aparte",
+]);
 
 /* ──────────────────────────────────────────────────────────────────────────
  * clientes — un inversionista del fondo.
@@ -53,11 +64,10 @@ export const clientes = pgTable("clientes", {
    *  comisión 33.333% con política deficit_pnl (66.66/33.33 con déficit). */
   comisionPct: numeric("comision_pct", { precision: 6, scale: 3 }),
   politicaComision: politicaComisionEnum("politica_comision"),
-  /** true = la comisión NO se descuenta del saldo: se devenga como informativa.
-   *  Para cuentas cuyos saldos históricos son BRUTOS y el operador cobró por
-   *  fuera (p. ej. Daniel Flores: el cliente retiraba y le pasaba el 35%).
-   *  false (default) = el saldo importado ya viene neto (p. ej. Lenin). */
-  comisionInformativa: boolean("comision_informativa").notNull().default(false),
+  /** Dónde está la comisión respecto del saldo. Ver tratamientoComisionEnum. */
+  tratamientoComision: tratamientoComisionEnum("tratamiento_comision")
+    .notNull()
+    .default("descontada"),
   /** Capital base pactado (high-water mark acordado con el cliente). Mientras
    *  el saldo no lo supere no se cobra comisión. NULL = la cuenta no trabaja
    *  con base pactada. Caso Daniel Flores: 130.000 desde el 13-abr-2026. */

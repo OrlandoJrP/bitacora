@@ -1,0 +1,1 @@
+ALTER TABLE "clientes" DROP COLUMN "comision_informativa";

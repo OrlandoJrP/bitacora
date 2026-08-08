@@ -26,7 +26,7 @@ export type ClienteEditable = {
   estado: "activo" | "inactivo";
   comisionPct: string | null;
   politicaComision: "normal" | "hwm_saldo" | "deficit_pnl" | null;
-  comisionInformativa: boolean;
+  tratamientoComision: "descontada" | "ya_retirada" | "pagada_aparte";
   capitalBase: string | null;
   notas: string | null;
 };
@@ -56,7 +56,7 @@ export function ClienteFormDialog({
       capitalInicial: String(fd.get("capitalInicial") ?? ""),
       comisionPct: String(fd.get("comisionPct") ?? ""),
       politicaComision: String(fd.get("politicaComision") ?? ""),
-      comisionInformativa: fd.get("comisionInformativa") === "on",
+      tratamientoComision: String(fd.get("tratamientoComision") ?? "descontada"),
       capitalBase: String(fd.get("capitalBase") ?? ""),
       notas: String(fd.get("notas") ?? ""),
     };
@@ -168,21 +168,24 @@ export function ClienteFormDialog({
               </select>
             </div>
           </div>
-          <label className="flex items-start gap-2.5 rounded-md border border-input p-3">
-            <input
-              type="checkbox"
-              name="comisionInformativa"
-              defaultChecked={cliente?.comisionInformativa ?? false}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-brand-gold"
-            />
-            <span className="text-sm">
-              Comisión informativa
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                Los saldos cargados son brutos y el cliente ya te pagó la comisión por fuera de la
-                cuenta. Se devenga y se muestra, pero no vuelve a descontarse del saldo.
-              </span>
-            </span>
-          </label>
+          <div className="space-y-1.5">
+            <Label htmlFor="tratamientoComision">¿Dónde está la comisión?</Label>
+            <select
+              id="tratamientoComision"
+              name="tratamientoComision"
+              defaultValue={cliente?.tratamientoComision ?? "descontada"}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="descontada">Se descuenta del saldo (normal)</option>
+              <option value="ya_retirada">Ya la retiraste de la cuenta (el saldo viene neto)</option>
+              <option value="pagada_aparte">El cliente la paga por fuera (el saldo es bruto)</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Las dos últimas no vuelven a restarla del saldo, pero significan lo contrario para el
+              cliente: en una ya cobraste y en la otra no. De esto dependen los textos de su estado
+              de cuenta.
+            </p>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="capitalBase">Capital base pactado (opcional)</Label>
             <Input

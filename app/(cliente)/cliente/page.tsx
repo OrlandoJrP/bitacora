@@ -37,10 +37,10 @@ export default async function ResumenPage() {
   if (!ledger) notFound();
 
   const r = ledger.resumen;
-  // Cuentas de saldos brutos: la comisión del operador se liquidó por fuera,
-  // así que lo que aquí se ve es el RESULTADO de la cuenta, no lo que quedó
-  // neto para el cliente. Etiquetarlo como "ganancia" sería engañoso.
-  const informativa = ledger.config.comisionInformativa === true;
+  // Solo cuando el saldo es BRUTO (el cliente pagó la comisión por fuera) lo que
+  // se ve es el RESULTADO de la cuenta y no lo que le quedó neto. Si la comisión
+  // ya se retiró de la cuenta, el saldo YA es neto y el texto normal es correcto.
+  const informativa = (ledger.config.tratamientoComision ?? "descontada") === "pagada_aparte";
   const { anio } = mesActual();
   const stats = estadisticas(ledger.meses);
   const gananciaAnio = round2(

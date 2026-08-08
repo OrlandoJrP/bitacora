@@ -34,12 +34,11 @@ export const crearClienteSchema = z.object({
     .refine((v) => v == null || (v >= 0 && v <= 100), "La comisión debe estar entre 0 y 100%.")
     .optional(),
   politicaComision: politicaOpcional.optional(),
-  /** true = la comisión se devenga sin descontarse del saldo (saldos brutos,
-   *  el operador ya cobró por fuera). Llega del checkbox como "on"/"true". */
-  comisionInformativa: z
+  /** Dónde está la comisión respecto del saldo (vacío = "descontada"). */
+  tratamientoComision: z
     .preprocess(
-      (v) => (v === undefined ? undefined : v === true || v === "on" || v === "true"),
-      z.boolean().optional(),
+      (v) => (v === "" || v == null ? undefined : v),
+      z.enum(["descontada", "ya_retirada", "pagada_aparte"]).optional(),
     )
     .optional(),
   /** Capital base pactado (high-water mark acordado). Vacío = sin base. */
